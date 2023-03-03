@@ -1,0 +1,38 @@
+version: '3'
+services:
+  db:
+    image: mysql:8.0.32-debian
+    volumes:
+      - ./data/db:/var/lib/mysql
+    ports:
+      - 3306:3306
+    restart: always
+    environment:
+       MYSQL_ROOT_PASSWORD : capstone2
+       MYSQL_PASSWORD : ''
+       MYSQL_USER  : root
+       MYSQL_DATABASE : capstone2
+
+
+  backend:
+    image: python:3.9
+    container_name: backend
+    build: ./backend
+    
+    depends_on:
+      - db
+        
+    volumes:
+      - ./backend:/code/backend
+    ports:
+      - 8000:8000 
+    command:   >
+      sh -c "
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    env_file: .\backend\.env
+    
+    
+    
+  
+      
