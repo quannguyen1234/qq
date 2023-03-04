@@ -5,4 +5,6 @@ class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BaseUser
         fields = '__all__'
+
+# class PatientSerializer(serializers.ModelSerializer):
     

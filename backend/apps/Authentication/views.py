@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json 
 import datetime
 from datetime import timedelta
-
+from apps.ExternalSystem import email_system
 def serialize_datetime(obj): 
 
     if isinstance(obj, datetime.datetime): 
@@ -26,17 +26,21 @@ def generate_otp():
         OTP += digits[math.floor(random.random() * 10)]
     return OTP
 
-def send_otp():
+def send_otp(receiver):
     OTP=generate_otp()
     ###
         #"code here"
     ###
+    body=f"""
+        Hello, The message from doctor famirly , here is  your OTP : {OTP} 
+        """
+    email_system.send_email(receiver,"Reset Password",body)
     return OTP
 
 @require_http_methods(['POST'])
 @csrf_exempt
 def check_existed_phone(request):
-    print(request.body)
+    
     phone_number=request.POST.get('phone_number')
     check=BaseUser.objects.filter(phone_number=phone_number).exists()
     if check:
@@ -48,9 +52,14 @@ def check_existed_phone(request):
 @csrf_exempt
 def otp_api(request):
     phone_number=request.POST.get('phone_number')
-    if  phone_number is not None and BaseUser.objects.filter(phone_number=phone_number).exists():
-        OTP=send_otp()
-        print(OTP)
+    try:
+        user=BaseUser.objects.get(phone_number=phone_number)
+    except:
+        user=None
+
+    if  phone_number is not None and user is not None:
+        OTP=send_otp(user.email)
+        
         now=datetime.datetime.now()
         request.session['otp']={}
         dict_otp=request.session.get('otp')

@@ -38,9 +38,10 @@ class BaseUserAPI(ModelViewSet):
             instance.set_password(new_password)
             instance.save()
             return JsonResponse({'message':'oke'})
+    
+# class 
             
-            
-              
+      
        
     
             
