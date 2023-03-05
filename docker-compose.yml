@@ -5,14 +5,13 @@ services:
     volumes:
       - ./data/db:/var/lib/mysql
     ports:
-      - 3306:3306
+      - 3308:3306
     restart: always
     environment:
        MYSQL_ROOT_PASSWORD : capstone2
-       MYSQL_PASSWORD : ''
-       MYSQL_USER  : root
+       MYSQL_PASSWORD : capstone2
+       MYSQL_USER  : capstone2
        MYSQL_DATABASE : capstone2
-
 
   backend:
     image: python:3.9
@@ -36,3 +35,37 @@ services:
     
   
       
+
+
+
+# version: '3'
+
+# services:
+#   db1:
+#     image: mysql
+#     container_name: db1
+#     restart: always
+#     environment:
+#       MYSQL_ROOT_PASSWORD: mypassword
+#       MYSQL_DATABASE: mydatabase
+#     networks:
+#       my-network:
+#         ipv4_address: 172.20.0.2
+
+#   db2:
+#     image: mysql
+#     container_name: db2
+#     restart: always
+#     environment:
+#       MYSQL_ROOT_PASSWORD: mypassword
+#       MYSQL_DATABASE: mydatabase
+#     networks:
+#       my-network:
+#         ipv4_address: 172.20.0.3
+
+# networks:
+#   my-network:
+#     ipam:
+#       driver: default
+#       config:
+#         - subnet: 172.20.0.0/16
