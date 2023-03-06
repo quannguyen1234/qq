@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json 
 import datetime
 from datetime import timedelta
-from apps.ExternalSystem import email_system
+from apps.Notification import functions
 def serialize_datetime(obj): 
 
     if isinstance(obj, datetime.datetime): 
@@ -34,7 +34,7 @@ def send_otp(receiver):
     body=f"""
         Hello, The message from doctor famirly , here is  your OTP : {OTP} 
         """
-    email_system.send_email(receiver,"Reset Password",body)
+    functions.send_email(receiver,"Reset Password",body)
     return OTP
 
 @require_http_methods(['POST'])
@@ -44,9 +44,9 @@ def check_existed_phone(request):
     phone_number=request.POST.get('phone_number')
     check=BaseUser.objects.filter(phone_number=phone_number).exists()
     if check:
-        return JsonResponse({'message':'oke'})
+        return JsonResponse({'message':'Existed','flag':True})
     else:
-        return JsonResponse({'message':'Has not existed the phone number'},status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'message':'Has not existed the phone number','flag':False})
 
 @require_http_methods(['POST'])
 @csrf_exempt
@@ -68,9 +68,9 @@ def otp_api(request):
         dict_otp['timeout_otp']={
             'time':json.dumps(now+timedelta(minutes=3),default=serialize_datetime),
         }
-        return JsonResponse({'message':'oke'})
+        return JsonResponse({'message':'Successfully','flag':True})
     else:
-        return JsonResponse({'message':'Not exist phone number'},status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'message':'Not exist phone number','flag':False},status=status.HTTP_400_BAD_REQUEST)
 
 
 @require_http_methods(['POST'])
@@ -89,9 +89,9 @@ def verify_otp_api(request):
             'phone_number':phone_number,
             'check':True
         }
-        return JsonResponse({'message':'oke'})
+        return JsonResponse({'message':'Successfully','flag':True})
     else:
-        return JsonResponse({'message':'OTP has not right'},status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'message':'OTP has not right','flag':False},status=status.HTTP_400_BAD_REQUEST)
     
     
 
