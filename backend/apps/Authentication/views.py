@@ -62,6 +62,7 @@ def otp_api(request):
         
         now=datetime.datetime.now()
         request.session['otp']={}
+        request.session.set_expiry(300)
         dict_otp=request.session.get('otp')
         dict_otp['code_otp']=OTP
         dict_otp['phone_number']=phone_number
@@ -82,13 +83,14 @@ def verify_otp_api(request):
     phone_number=dict_otp['phone_number']
     time=request.session['otp']['timeout_otp']['time']
     # print(datetime.datetime.strptime(time,'%Y-%d-%M%H:%M:%S'))
-    print(time)
+    
     if otp1 == otp2:
         # request.session.de
         request.session['exchangeable_password']={
             'phone_number':phone_number,
             'check':True
         }
+
         return JsonResponse({'message':'Successfully','flag':True})
     else:
         return JsonResponse({'message':'OTP has not right','flag':False},status=status.HTTP_400_BAD_REQUEST)

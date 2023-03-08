@@ -3,6 +3,7 @@ from rest_framework import serializers
 from django.db.transaction import atomic
 from apps.User.references import REVERSE_USER_TYPE
 from django.contrib.auth.password_validation import validate_password as validate_password_defaulf
+
 class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BaseUser
@@ -29,9 +30,10 @@ class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = '__all__'
-    # base_user = serializers.PrimaryKeyRelatedField(queryset=BaseUser.objects.all())
     base_user = BaseUserSerializer()
 
+    def validate(self, attrs):
+        return super().validate(attrs) 
 
     @atomic
     def create(self, validated_data):

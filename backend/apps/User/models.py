@@ -6,7 +6,7 @@ from django.contrib.auth.models import (
 import uuid
 import regex,datetime
 from .references import USER_TYPE 
-
+from .functions import generate_id
 class BaseUserManager(BaseUserManager):
     def create_user(self,phone_number, email, firstname, password=None):
         """
@@ -138,6 +138,15 @@ class Patient(models.Model):
     def get_id(self):
         return self.patient_id
     
+    @staticmethod
+    def generate_patient_id():
+        patient_id=generate_id(10)
+        while Patient.objects.filter(patient_id=patient_id).exists():
+            patient_id=generate_id(10)
+        return patient_id
+
+
+   
 class Admin(models.Model):
 
     class Meta:
