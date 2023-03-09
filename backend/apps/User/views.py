@@ -7,8 +7,15 @@ from django.http import JsonResponse
 from django.contrib.auth.hashers import check_password 
 from django.contrib.auth.password_validation import validate_password
 from .serializers import BaseUserSerializer,PatientSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
 
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 
 class BaseUserAPI(ModelViewSet):
     queryset = BaseUser.objects.all()
@@ -36,7 +43,9 @@ class BaseUserAPI(ModelViewSet):
         instance.password=new_password
         instance.save()
         return JsonResponse({
-                'message':'Sucessfully','flag':True},
+                'message':'Sucessfully',
+                **get_tokens_for_user(request.user),
+                'flag':True},
                 status=status.HTTP_200_OK
         )
         # else:
