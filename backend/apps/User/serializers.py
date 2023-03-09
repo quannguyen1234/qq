@@ -12,7 +12,7 @@ class BaseUserSerializer(serializers.ModelSerializer):
             'id': {'required':False  },
             'firstname' : {'write_only':True},
             'surname' : {'write_only':True},
-            'password' : {'write_only':True}
+            # 'password' : {'write_only':True}
         }
     full_name=serializers.SerializerMethodField()
     
