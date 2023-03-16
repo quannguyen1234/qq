@@ -38,7 +38,7 @@ class PatientSerializer(serializers.ModelSerializer):
     @atomic
     def create(self, validated_data):
         base_user_data = validated_data.pop('base_user')
-        instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'])
+        instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Patient'])
         instance=Patient.objects.create(**validated_data,base_user=instance_base_user)
         return instance
     

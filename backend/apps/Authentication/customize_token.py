@@ -18,6 +18,6 @@ class CustomizeTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'email':self.user.email
                 }
             data['person_infor']=person_infor
-        except:
+        except Exception as e:
             return {'detail':'Fail'}
         return data
