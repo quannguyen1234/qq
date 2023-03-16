@@ -1,4 +1,4 @@
-from  rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from apps.User.references import RELATED_USER
 class CustomizeTokenObtainPairSerializer(TokenObtainPairSerializer):
 
@@ -9,7 +9,7 @@ class CustomizeTokenObtainPairSerializer(TokenObtainPairSerializer):
         
             type_user=getattr(self.user,RELATED_USER[user_type])
 
-            person_infor={
+            user={
                 'id':type_user.get_id(),
                 'phone_number':self.user.phone_number,
                 'gender':self.user.gender,
@@ -17,7 +17,20 @@ class CustomizeTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'role':self.user.user_type,
                 'email':self.user.email
                 }
-            data['person_infor']=person_infor
+            data['user']=user
         except Exception as e:
-            return {'detail':'Fail'}
+            return {'message':'Fail','flag':False}
         return data
+    
+# class TokenSecurity():
+#     def __init__(self,token) -> None:
+#         self.token=token
+    
+#     def check_token(self):
+
+
+        
+
+
+# def 
+    

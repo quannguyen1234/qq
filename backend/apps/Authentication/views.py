@@ -8,6 +8,37 @@ import json
 import datetime
 from datetime import timedelta
 from apps.Notification import functions
+from rest_framework_simplejwt.tokens import AccessToken
+from apps.User.references import RELATED_USER
+
+@require_http_methods(['GET'])
+@csrf_exempt
+def check_token(request):
+    token = request.META.get('HTTP_AUTHORIZATION', " ").split(' ')[1]
+    try:
+        token=AccessToken(token=token,verify=True)
+    except Exception as e:
+        return JsonResponse({'message':str(e),'flag':False},status=status.HTTP_403_FORBIDDEN)
+    
+    base_user=BaseUser.objects.get(id=token.payload['user_id'])
+    user=getattr(base_user,RELATED_USER[base_user.user_type])
+    
+    user_infor={
+        'id':user.get_id(),
+        'phone_number':base_user.phone_number,
+        'gender':base_user.gender,
+        'full_name':f"{base_user.surname} {base_user.firstname}",
+        'role':base_user.user_type,
+        'email':base_user.email
+    }
+    
+    return JsonResponse(
+        {
+            'user':user_infor,
+            'flag':True
+        }
+    )
+
 def serialize_datetime(obj): 
 
     if isinstance(obj, datetime.datetime): 

@@ -7,5 +7,6 @@ urlpatterns=[
     path('token/refresh', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
     path('otp/send-otp',views.otp_api),
     path('otp/verify-otp',views.verify_otp_api),  
-    path('check-existed-phone',views.check_existed_phone)
+    path('check-existed-phone',views.check_existed_phone),
+    path('check-token',views.check_token)
 ]
