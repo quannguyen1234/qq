@@ -6,7 +6,9 @@ from django.contrib.auth.models import (
 import uuid
 import regex,datetime
 from .references import USER_TYPE 
+from .references import GENDER
 from .functions import generate_id
+
 class BaseUserManager(BaseUserManager):
     def create_user(self,phone_number, email, firstname, password=None):
         """
@@ -58,7 +60,7 @@ class BaseUser(PermissionsMixin,AbstractBaseUser):
     surname=models.CharField(max_length=30,null=True,default="")
     firstname=models.CharField(max_length=20,null=True,default="")
     address=models.CharField(max_length=255,null=True)
-    gender=models.BooleanField(null=True)
+    gender=models.BooleanField(choices=GENDER,null=True)
     is_active = models.BooleanField(default=True)
     user_type=models.SmallIntegerField(choices=USER_TYPE,null=True)
     created=models.DateField(auto_now=True)

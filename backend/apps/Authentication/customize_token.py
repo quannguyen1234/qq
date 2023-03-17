@@ -11,7 +11,7 @@ class CustomizeTokenObtainPairSerializer(TokenObtainPairSerializer):
             data = super().validate(attrs)
         except:
             raise exceptions.AuthenticationFailed(
-             {'message':'No active account found with the given credentials','flag':False}   
+                {'message':'No active account found with the given credentials','flag':False}   
             )
             
         try:

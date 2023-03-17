@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.db.transaction import atomic
 from apps.User.references import REVERSE_USER_TYPE
 from django.contrib.auth.password_validation import validate_password as validate_password_defaulf
-
+from abc import ABC
 class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BaseUser
@@ -22,16 +22,15 @@ class BaseUserSerializer(serializers.ModelSerializer):
     def validate_password(self,value):
         validate_password_defaulf(value)
         return value
-    
 
-# class PatientSerializer(serializers.ModelSerializer):
     
 class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = '__all__'
     base_user = BaseUserSerializer()
-
+    
+    
     def validate(self, attrs):
         return super().validate(attrs) 
 
@@ -42,10 +41,10 @@ class PatientSerializer(serializers.ModelSerializer):
         instance=Patient.objects.create(**validated_data,base_user=instance_base_user)
         return instance
     
-    # @atomic
-    # def update(self,instance,validated_data):
-    #     base_user_data=validated_data.pop('base_user')
-    #     user=instance.base_user
-    #     user_serialize=BaseUser(instance=user,user_type=REVERSE_USER_TYPE['Doctor'])
-    #     user_serialize.update(user,dict(base_user_data))
-    #     return super().update(instance,validated_data)
+    @atomic
+    def update(self,instance,validated_data):
+        base_user_data=validated_data.pop('base_user')
+        base_user=instance.base_user
+        base_user_serializer=BaseUserSerializer(instance=base_user)
+        base_user_serializer.update(instance=base_user,validated_data=base_user_data)
+        return super().update(instance,validated_data)
