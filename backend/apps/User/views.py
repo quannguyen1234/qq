@@ -26,20 +26,17 @@ class BaseUserAPI(ModelViewSet):
     @action(methods = ['patch'], detail = False, url_path='change-password')
     def change_password(self,request):       
         request.data._mutable=True 
-        # old_password=request.data.get('old_password')
         new_password=request.data.get('new_password')
         instance=request.user
-    
-        # if instance.check_password(old_password):
+        
         try:
             validate_password(new_password)
         except Exception as e:
-            errror=str(e)
             return JsonResponse({
-                'message':'Password dont guarante for confidential','detail':errror,'flag':False},
+                'message':'Password dont guarante for confidential','password':list(e),'flag':False},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        # instance.set_password(new_password)
+     
         instance.password=new_password
         instance.save()
         return JsonResponse({
@@ -48,8 +45,7 @@ class BaseUserAPI(ModelViewSet):
                 'flag':True},
                 status=status.HTTP_200_OK
         )
-        # else:
-        #     return JsonResponse({'message':'Old password is not correct','flag':False},status=status.HTTP_400_BAD_REQUEST)
+        
         
     
     @action(methods = ['patch'], detail = False, url_path='reset-password/(?P<phone_number>\w+)')
@@ -68,18 +64,16 @@ class BaseUserAPI(ModelViewSet):
             try:
                 validate_password(new_password)
             except Exception as e:
-                errror=str(e)
                 return JsonResponse({
-                    'message':'Password dont guarante for confidential','detail':errror,'flag':False},
+                    'message':'Password dont guarante for confidential','password':list(e),'flag':False},
                     status=status.HTTP_400_BAD_REQUEST
                 )
                 
-            # instance.set_password(new_password)
             instance.password=new_password
             instance.save()
             return JsonResponse({'message':'successfully','flag':True})
         else:
-            return JsonResponse({'message':'Phone number is not compatiable to sending phone number before','flag':False}
+            return JsonResponse({'message':'Phone number is not compatiable ','flag':False}
                                     ,status=status.HTTP_403_FORBIDDEN)
         
     @action(methods = ['post'], detail = False, url_path='check-password')
