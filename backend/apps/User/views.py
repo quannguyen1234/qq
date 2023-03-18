@@ -113,7 +113,7 @@ class PatientAPI(ModelViewSet):
         
         check,dict_error=is_valid(serializer)
         if not check:
-            return JsonResponse(dict_error,status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(dict_error,status=status.HTTP_200_OK)
             
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -128,7 +128,7 @@ class PatientAPI(ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         check,dict_error=is_valid(serializer)
         if not check:
-            return JsonResponse(dict_error,status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(dict_error,status=status.HTTP_200_OK)
         self.perform_update(serializer)
 
         if getattr(instance, '_prefetched_objects_cache', None):
