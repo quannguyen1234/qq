@@ -57,8 +57,8 @@ class BaseUser(PermissionsMixin,AbstractBaseUser):
         null=True
     )
     citizen_identification=models.CharField(max_length=12,unique=True,null=True)
-    surname=models.CharField(max_length=30,null=True,default="")
-    firstname=models.CharField(max_length=20,null=True,default="")
+    surname=models.CharField(max_length=30,null=True,default="",blank=True)
+    firstname=models.CharField(max_length=20,null=True,default="",blank=True)
     address=models.CharField(max_length=255,null=True)
     gender=models.BooleanField(choices=GENDER,null=True)
     is_active = models.BooleanField(default=True)

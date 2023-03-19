@@ -94,6 +94,14 @@ def is_valid(serializer):
 
         return False, dict_error
     return True,{}
+
+def split_name(full_name):
+    arr=full_name.split(" ")
+    surname=arr[0:-1]
+    firstname=arr[-1]
+    if len(surname)==0:
+        surname=""
+    return surname,firstname
     
 class PatientAPI(ModelViewSet):
     queryset = Patient.objects.all()    
@@ -105,9 +113,10 @@ class PatientAPI(ModelViewSet):
 
         patient_id=Patient.generate_patient_id()
         request.data['patient_id']=patient_id
-        split_name = base_user_data.pop("full_name").split(' ')
-        base_user_data['surname']=split_name[0]
-        base_user_data['firstname']=split_name[1]
+        surname,firstname=split_name(base_user_data.pop('full_name'))
+
+        base_user_data['surname']=surname
+        base_user_data['firstname']=firstname
         
         serializer = self.get_serializer(data=request.data)
         
@@ -124,7 +133,14 @@ class PatientAPI(ModelViewSet):
       
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
+        base_user_data=request.data['base_user']
+
         instance = self.get_object()
+        surname,firstname=split_name(base_user_data.pop('full_name'))
+
+        base_user_data['surname']=surname
+        base_user_data['firstname']=firstname
+
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         check,dict_error=is_valid(serializer)
         if not check:
