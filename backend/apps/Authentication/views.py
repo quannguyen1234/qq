@@ -8,8 +8,24 @@ import json
 import datetime
 from datetime import timedelta
 from apps.Notification import functions
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
 from apps.User.references import RELATED_USER
+from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.models import TokenUser
+from rest_framework_simplejwt.token_blacklist.models import  OutstandingToken
+
+@csrf_exempt
+def expried_token(request):
+    refresh_token=request.POST.get('refresh',None)
+    if refresh_token is not None:
+        try:
+            refresh_token=RefreshToken(token=refresh_token)
+            refresh_token.check_blacklist()
+            refresh_token.blacklist()
+        except:
+            return JsonResponse({'message':'refresh token expried or not exist','flag':False},status=status.HTTP_400_BAD_REQUEST)
+    
+    return JsonResponse({'message':'Sucessfully','flag':True})
 
 @require_http_methods(['GET'])
 @csrf_exempt
