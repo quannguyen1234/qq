@@ -67,8 +67,8 @@ class BaseUser(PermissionsMixin,AbstractBaseUser):
     avatar=models.CharField(null=True,max_length=128)
     objects = BaseUserManager()
     
-    USERNAME_FIELD = 'phone_number'
-    REQUIRED_FIELDS = ['email','firstname']
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['firstname']
     
     def clean(self):        
         if regex.match("^.+@.+\..+$",self.email) is  None:
