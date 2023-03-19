@@ -24,7 +24,6 @@ class BaseUserManager(BaseUserManager):
             password=password,
             firstname=firstname,
         )
-        user.set_password(password)
         user.save(using=self._db)
         return user
 
@@ -33,10 +32,12 @@ class BaseUserManager(BaseUserManager):
         Creates and saves a superuser with the given email, date of
         birth and password.
         """
-   
-        user = self.create_user(
+        if not email:
+            raise ValueError('Users must have an email address')
+        
+        user = self.model(
             phone_number=phone_number,
-            email=email,
+            email=self.normalize_email(email),
             password=password,
             firstname=firstname,
         )
@@ -68,7 +69,7 @@ class BaseUser(PermissionsMixin,AbstractBaseUser):
     objects = BaseUserManager()
     
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['firstname']
+    REQUIRED_FIELDS = ['phone_number','firstname']
     
     def clean(self):        
         if regex.match("^.+@.+\..+$",self.email) is  None:
