@@ -48,17 +48,18 @@ class BaseUserAPI(ModelViewSet):
         
         
     
-    @action(methods = ['patch'], detail = False, url_path='reset-password/(?P<phone_number>\w+)')
-    def reset_password(self,request,phone_number=None):
+    @action(methods = ['patch'], detail = False, url_path='reset-password')
+    def reset_password(self,request):
        
+        email=request.data.get('email',None)
         conditions=request.session.get('exchangeable_password',None)
-        if conditions is not None and phone_number is not None:
-            if phone_number != conditions['phone_number']:
-                request.session.__delitem__('exchangeable_password')
-                return JsonResponse({'message':'Phone number is not compatiable to sending phone number before','flag':False}
+        if conditions is not None and email is not None:
+            if email != conditions['email']:
+                
+                return JsonResponse({'message':'Forbiden','flag':False}
                                     ,status=status.HTTP_403_FORBIDDEN)
             
-            instance=BaseUser.objects.get(phone_number=phone_number)
+            instance=BaseUser.objects.get(email=email)
             data=request.POST
             new_password=data.get('new_password')
             try:
@@ -71,9 +72,12 @@ class BaseUserAPI(ModelViewSet):
                 
             instance.password=new_password
             instance.save()
+
+            request.session.__delitem__('exchangeable_password')# del flag change pass
+            
             return JsonResponse({'message':'successfully','flag':True})
         else:
-            return JsonResponse({'message':'Phone number is not compatiable ','flag':False}
+            return JsonResponse({'message':'Forbiden','flag':False}
                                     ,status=status.HTTP_403_FORBIDDEN)
         
     @action(methods = ['post'], detail = False, url_path='check-password')

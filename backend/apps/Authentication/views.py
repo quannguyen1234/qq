@@ -70,39 +70,38 @@ def send_otp(receiver):
 
 @require_http_methods(['POST'])
 @csrf_exempt
-def check_existed_phone(request):
+def check_existed_email(request):
     
-    phone_number=request.POST.get('phone_number')
-    check=BaseUser.objects.filter(phone_number=phone_number).exists()
+    email=request.POST.get('email')
+    check=BaseUser.objects.filter(email=email).exists()
     if check:
         return JsonResponse({'message':'Existed','flag':True})
     else:
-        return JsonResponse({'message':'Has not existed the phone number','flag':False})
+        return JsonResponse({'message':'Has not existed the email','flag':False})
 
 @require_http_methods(['POST'])
 @csrf_exempt
 def otp_api(request):
-    phone_number=request.POST.get('phone_number')
-    try:
-        user=BaseUser.objects.get(phone_number=phone_number)
-    except:
-        user=None
+    email=request.POST.get('email',None)
+    check_mail=False
+    if BaseUser.objects.filter(email=email).exists():
+        check_mail=True
 
-    if  phone_number is not None and user is not None:
-        OTP=send_otp(user.email)
+    if  email is not None  and check_mail:
+        OTP=send_otp(email)
         
         now=datetime.datetime.now()
         request.session['otp']={}
         request.session.set_expiry(300)
         dict_otp=request.session.get('otp')
         dict_otp['code_otp']=OTP
-        dict_otp['phone_number']=phone_number
+        dict_otp['email']=email
         dict_otp['timeout_otp']={
             'time':json.dumps(now+timedelta(minutes=3),default=serialize_datetime),
         }
         return JsonResponse({'message':'Successfully','flag':True})
     else:
-        return JsonResponse({'message':'Not exist phone number','flag':False},status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'message':'Not exist email','flag':False},status=status.HTTP_400_BAD_REQUEST)
 
 
 @require_http_methods(['POST'])
@@ -111,14 +110,13 @@ def verify_otp_api(request):
     dict_otp=request.session.get('otp')
     otp1=request.POST['otp']
     otp2=dict_otp['code_otp']
-    phone_number=dict_otp['phone_number']
+    email=dict_otp['email']
     time=request.session['otp']['timeout_otp']['time']
     # print(datetime.datetime.strptime(time,'%Y-%d-%M%H:%M:%S'))
     
     if otp1 == otp2:
-        # request.session.de
         request.session['exchangeable_password']={
-            'phone_number':phone_number,
+            'email':email,
             'check':True
         }
 
