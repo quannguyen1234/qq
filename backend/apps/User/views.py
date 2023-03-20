@@ -9,6 +9,9 @@ from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import validate_password
 from .serializers import BaseUserSerializer,PatientSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from core.utils import Custom_CheckPermisson
+from . import permission
+
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -110,11 +113,19 @@ def split_name(full_name):
 
     return surname,firstname
     
-class PatientAPI(ModelViewSet):
+   
+class PatientAPI(Custom_CheckPermisson,ModelViewSet):
     queryset = Patient.objects.all()    
     serializer_class = PatientSerializer
-    permission_classes = []
-
+    permission_classes = [permission.CreateAction | (IsAuthenticated & (permission.IsOwner|permission.IsAdmin))]
+    authentication_classes=[]
+    
+   
+    
+    def get_permissions(self):
+        setattr(self.request,'action',self.action)
+        return super().get_permissions()
+    
     def create(self, request, *args, **kwargs):        
         base_user_data=request.data['base_user']
         print(base_user_data)

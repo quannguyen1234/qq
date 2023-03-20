@@ -9,10 +9,10 @@ class CustomizeTokenObtainPairSerializer(TokenObtainPairSerializer):
     
      
     def validate(self, attrs):
-        # try:
-        data = super().validate(attrs)
-        # except:
-            # return {'message':'No active account found with the given credentials','flag':'false','status':'400'}
+        try:
+            data = super().validate(attrs)
+        except:
+            return {'message':'No active account found with the given credentials','flag':'false','status':'400'}
                 
         try:
             user_type=self.user.user_type

@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser,PermissionsMixin
 )
+from django.contrib.auth.hashers import identify_hasher
 import uuid
 import regex,datetime
 from .references import USER_TYPE 
@@ -66,6 +67,8 @@ class BaseUser(PermissionsMixin,AbstractBaseUser):
     user_type=models.SmallIntegerField(choices=USER_TYPE,null=True)
     created=models.DateField(auto_now=True)
     avatar=models.CharField(null=True,max_length=128)
+    is_hash=models.BooleanField(default=False)
+
     objects = BaseUserManager()
     
     USERNAME_FIELD = 'email'
@@ -90,7 +93,15 @@ class BaseUser(PermissionsMixin,AbstractBaseUser):
 
         if self.firstname is not None:
             self.firstname=self.firstname.title()
-        self.set_password(self.password)
+            
+        
+
+        # check if the password is hashed
+        if self.is_hash==False:
+            self.is_hash=True
+            self.set_password(self.password)
+            
+        
         
         return super().save(*args,**kwagrs)
     
