@@ -26,4 +26,4 @@ class IsOwner(BasePermission):
 
     def has_object_permission(self, request, view, obj):
     
-        return getattr(request.user,RELATED_USER['user_patient'])==obj
+        return getattr(request.user,'user_patient')==obj

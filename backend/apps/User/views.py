@@ -114,13 +114,11 @@ def split_name(full_name):
     return surname,firstname
     
    
-class PatientAPI(Custom_CheckPermisson,ModelViewSet):
+class PatientAPI(ModelViewSet):
     queryset = Patient.objects.all()    
     serializer_class = PatientSerializer
     permission_classes = [permission.CreateAction | (IsAuthenticated & (permission.IsOwner|permission.IsAdmin))]
-    authentication_classes=[]
-    
-   
+  
     
     def get_permissions(self):
         setattr(self.request,'action',self.action)

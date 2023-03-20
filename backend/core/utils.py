@@ -1,4 +1,3 @@
-from core.exceptions import Custom_APIException
 from rest_framework.exceptions import APIException,MethodNotAllowed
 from rest_framework import status
 
