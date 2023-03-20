@@ -91,10 +91,10 @@ if os.getenv('sql_lite')=="0":
     DATABASES = {
         'default': {
             'ENGINE'  : 'django.db.backends.mysql', 
-            'NAME'    : os.getenv('MYSQL_DATABASE' ),
-            'USER'    : os.getenv('MYSQL_USER','root'),
-            'PASSWORD': os.getenv('MYSQL_PASSWORD',''),
-            'HOST'    :DB_HOST,
+            'NAME'    : 'capstone2',
+            'USER'    : 'root',
+            'PASSWORD': 'capstone2',
+            'HOST'    : 'db',
             'PORT'    : os.getenv('DB_PORT','3306'),
         },
     }

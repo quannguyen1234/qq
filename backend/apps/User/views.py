@@ -2,6 +2,7 @@ from .models import BaseUser,Patient
 from rest_framework import status,response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.decorators import action
 from django.http import JsonResponse
 from django.contrib.auth.hashers import check_password 
@@ -33,8 +34,7 @@ class BaseUserAPI(ModelViewSet):
             validate_password(new_password)
         except Exception as e:
             return JsonResponse({
-                'message':'Password dont guarante for confidential','password':list(e),'flag':False},
-                status=status.HTTP_400_BAD_REQUEST
+                'message':'Password dont guarante for confidential','password':list(e),'flag':'false','status':'400'},
             )
      
         instance.password=new_password
@@ -42,7 +42,9 @@ class BaseUserAPI(ModelViewSet):
         return JsonResponse({
                 'message':'Sucessfully',
                 **get_tokens_for_user(request.user),
-                'flag':True},
+                'flag':'true',
+                'status':'200',
+                },
                 status=status.HTTP_200_OK
         )
         
@@ -55,9 +57,7 @@ class BaseUserAPI(ModelViewSet):
         conditions=request.session.get('exchangeable_password',None)
         if conditions is not None and email is not None:
             if email != conditions['email']:
-                
-                return JsonResponse({'message':'Forbiden','flag':False}
-                                    ,status=status.HTTP_403_FORBIDDEN)
+                return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':'false','status':'403'})
             
             instance=BaseUser.objects.get(email=email)
             data=request.POST
@@ -66,8 +66,7 @@ class BaseUserAPI(ModelViewSet):
                 validate_password(new_password)
             except Exception as e:
                 return JsonResponse({
-                    'message':'Password dont guarante for confidential','password':list(e),'flag':False},
-                    status=status.HTTP_400_BAD_REQUEST
+                    'message':'Password dont guarante for confidential','password':list(e),'flag':'false','status':'400'}
                 )
                 
             instance.password=new_password
@@ -75,26 +74,26 @@ class BaseUserAPI(ModelViewSet):
 
             request.session.__delitem__('exchangeable_password')# del flag change pass
             
-            return JsonResponse({'message':'successfully','flag':True})
+            return JsonResponse({'message':'successfully','flag':'true','status':'200'})
         else:
-            return JsonResponse({'message':'Forbiden','flag':False}
-                                    ,status=status.HTTP_403_FORBIDDEN)
+            return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':'false','status':'403'})
         
     @action(methods = ['post'], detail = False, url_path='check-password')
     def check_password(self,request):
         old_password=request.data.get('old_password')
         if request.user.check_password(old_password):
-            return JsonResponse({'message':'Old password matched','flag':True},status=status.HTTP_200_OK)
+            return JsonResponse({'message':'Old password matched','flag':'true','status':'200'})
         else:
-            return JsonResponse({'message':'Old password did not match','flag':False},status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'message':'Old password did not match','flag':'false','status':'400'})
     
     
-def is_valid(serializer):
+def is_valid(serializer,status):
     try:
         serializer.is_valid(raise_exception=True)
     except Exception as e:
         dict_error=e.__dict__['detail']
-        dict_error['flag']=False
+        dict_error['flag']='false'
+        dict_error['status']=status
 
         return False, dict_error
     return True,{}
@@ -103,8 +102,12 @@ def split_name(full_name):
     arr=full_name.split(" ")
     surname=arr[0:-1]
     firstname=arr[-1]
+
     if len(surname)==0:
         surname=""
+    else:
+        surname=" ".join(surname)
+
     return surname,firstname
     
 class PatientAPI(ModelViewSet):
@@ -114,7 +117,7 @@ class PatientAPI(ModelViewSet):
 
     def create(self, request, *args, **kwargs):        
         base_user_data=request.data['base_user']
-
+        print(base_user_data)
         patient_id=Patient.generate_patient_id()
         request.data['patient_id']=patient_id
         surname,firstname=split_name(base_user_data.pop('full_name'))
@@ -124,15 +127,17 @@ class PatientAPI(ModelViewSet):
         
         serializer = self.get_serializer(data=request.data)
         
-        check,dict_error=is_valid(serializer)
+        check,dict_error=is_valid(serializer,'400')
         if not check:
-            return JsonResponse(dict_error,status=status.HTTP_200_OK)
+            return JsonResponse({**dict_error,**dict_error})
             
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         data=serializer.data
-        data['flag']=True
-        return response.Response(data, status=status.HTTP_201_CREATED, headers=headers)
+        extra_data={'flag':'true','status':'201'}
+        
+        
+        return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
 
       
     def update(self, request, *args, **kwargs):
@@ -146,9 +151,9 @@ class PatientAPI(ModelViewSet):
         base_user_data['firstname']=firstname
 
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        check,dict_error=is_valid(serializer)
+        check,dict_error=is_valid(serializer,'400')
         if not check:
-            return JsonResponse(dict_error,status=status.HTTP_200_OK)
+            return JsonResponse(dict_error)
         self.perform_update(serializer)
 
         if getattr(instance, '_prefetched_objects_cache', None):
@@ -156,7 +161,8 @@ class PatientAPI(ModelViewSet):
             # forcibly invalidate the prefetch cache on the instance.
             instance._prefetched_objects_cache = {}
         data=serializer.data
-        data['flag']=True
+        data['flag']='true'
+        data['staus']='201'
         return response.Response(data)
     
             

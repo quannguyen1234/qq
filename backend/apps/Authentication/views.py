@@ -18,14 +18,15 @@ from rest_framework_simplejwt.token_blacklist.models import  OutstandingToken
 def expried_token(request):
     refresh_token=request.POST.get('refresh',None)
     if refresh_token is not None:
+
         try:
             refresh_token=RefreshToken(token=refresh_token)
             refresh_token.check_blacklist()
             refresh_token.blacklist()
         except:
-            return JsonResponse({'message':'refresh token expried or not exist','flag':False},status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'message':'refresh token expried or not exist','flag':'false','status':'403'})
     
-    return JsonResponse({'message':'Sucessfully','flag':True})
+    return JsonResponse({'message':'Sucessfully','flag':'true','status':'200'})
 
 @require_http_methods(['GET'])
 @csrf_exempt
@@ -34,7 +35,7 @@ def check_token(request):
     try:
         token=AccessToken(token=token,verify=True)
     except Exception as e:
-        return JsonResponse({'message':str(e),'flag':False},status=status.HTTP_403_FORBIDDEN)
+        return JsonResponse({'message':str(e),'flag':'false','status':'403'})
     
     base_user=BaseUser.objects.get(id=token.payload['user_id'])
     user=getattr(base_user,RELATED_USER[base_user.user_type])
@@ -51,7 +52,8 @@ def check_token(request):
     return JsonResponse(
         {
             'user':user_infor,
-            'flag':True
+            'flag':'true',
+            'status':'201'
         }
     )
 
@@ -62,6 +64,7 @@ def serialize_datetime(obj):
         return obj.isoformat() 
 
     raise TypeError("Type not serializable") 
+
 def generate_otp():
     digits = "0123456789"
     OTP = ""
@@ -91,9 +94,9 @@ def check_existed_email(request):
     email=request.POST.get('email')
     check=BaseUser.objects.filter(email=email).exists()
     if check:
-        return JsonResponse({'message':'Existed','flag':True})
+        return JsonResponse({'message':'Existed','flag':'true','status':'200'})
     else:
-        return JsonResponse({'message':'Has not existed the email','flag':False})
+        return JsonResponse({'message':'Has not existed the email','flag':'false','status':'400'})
 
 @require_http_methods(['POST'])
 @csrf_exempt
@@ -102,7 +105,7 @@ def otp_api(request):
     check_mail=False
     if BaseUser.objects.filter(email=email).exists():
         check_mail=True
-
+    
     if  email is not None  and check_mail:
         OTP=send_otp(email)
         
@@ -115,30 +118,31 @@ def otp_api(request):
         dict_otp['timeout_otp']={
             'time':json.dumps(now+timedelta(minutes=3),default=serialize_datetime),
         }
-        return JsonResponse({'message':'Successfully','flag':True})
+        return JsonResponse({'message':'Successfully','flag':'true','status':'200'})
     else:
-        return JsonResponse({'message':'Not exist email','flag':False},status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'message':'Not exist email','flag':'false','status':'400'})
 
 
 @require_http_methods(['POST'])
 @csrf_exempt
 def verify_otp_api(request):
     dict_otp=request.session.get('otp')
-    otp1=request.POST['otp']
-    otp2=dict_otp['code_otp']
-    email=dict_otp['email']
-    time=request.session['otp']['timeout_otp']['time']
-    # print(datetime.datetime.strptime(time,'%Y-%d-%M%H:%M:%S'))
-    
+    try:
+        otp1=request.POST['otp']
+        otp2=dict_otp['code_otp']
+        email=dict_otp['email']
+    except:
+        return JsonResponse({'message':'send otp before verifing','flag':'false','status':'409'})
+        
     if otp1 == otp2:
         request.session['exchangeable_password']={
             'email':email,
             'check':True
         }
 
-        return JsonResponse({'message':'Successfully','flag':True})
+        return JsonResponse({'message':'Successfully','flag':'true','status':'200'})
     else:
-        return JsonResponse({'message':'OTP has not right','flag':False},status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({'message':'OTP has not right','flag':'false','status':'400'})
     
     
 

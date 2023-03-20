@@ -84,9 +84,14 @@ class BaseUser(PermissionsMixin,AbstractBaseUser):
             return ""
             
     def save(self,*args,**kwagrs):
-        self.surname=self.surname.title()
-        self.firstname=self.firstname.title()
+
+        if self.surname is not None:
+            self.surname=self.surname.title()
+
+        if self.firstname is not None:
+            self.firstname=self.firstname.title()
         self.set_password(self.password)
+        
         return super().save(*args,**kwagrs)
     
         
