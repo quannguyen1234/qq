@@ -9,6 +9,7 @@ import regex,datetime
 from .references import USER_TYPE 
 from .references import GENDER
 from .functions import generate_id
+import datetime
 
 class BaseUserManager(BaseUserManager):
     def create_user(self,phone_number, email, firstname, password=None):
@@ -65,6 +66,7 @@ class BaseUser(PermissionsMixin,AbstractBaseUser):
     gender=models.BooleanField(choices=GENDER,null=True)
     is_active = models.BooleanField(default=True)
     user_type=models.SmallIntegerField(choices=USER_TYPE,null=True)
+    birth_day=models.DateField(null=True)
     created=models.DateField(auto_now=True)
     avatar=models.CharField(null=True,max_length=128)
     is_hash=models.BooleanField(default=False)
