@@ -1,4 +1,4 @@
-from .models import BaseUser,Patient
+from .models import BaseUser,Patient,Doctor
 from rest_framework import serializers
 from django.db.transaction import atomic
 from apps.User.references import REVERSE_USER_TYPE
@@ -48,3 +48,13 @@ class PatientSerializer(serializers.ModelSerializer):
         base_user_serializer=BaseUserSerializer(instance=base_user)
         base_user_serializer.update(instance=base_user,validated_data=base_user_data)
         return super().update(instance,validated_data)
+    
+
+class DoctorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Doctor
+        fields = '__all__'
+
+    base_user = BaseUserSerializer()
+      
+  

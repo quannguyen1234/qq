@@ -4,14 +4,14 @@ from apps.User.references import REVERSE_USER_TYPE,RELATED_USER
 class IsPatient(BasePermission):
 
     def has_permission(self, request, view):
-        if request.user_type==REVERSE_USER_TYPE['Patient']:
+        if request.user.user_type==REVERSE_USER_TYPE['Patient']:
             return True
         return False
           
 class IsAdmin(BasePermission):
 
     def has_permission(self, request, view):
-        if request.user_type==REVERSE_USER_TYPE['Admin']:
+        if request.user.user_type==REVERSE_USER_TYPE['Admin']:
             return True
         return False
           

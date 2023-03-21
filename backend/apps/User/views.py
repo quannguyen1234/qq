@@ -1,17 +1,16 @@
-from .models import BaseUser,Patient
+from .models import BaseUser,Patient,Doctor
 from rest_framework import status,response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.decorators import action
 from django.http import JsonResponse
-from django.contrib.auth.hashers import check_password 
 from django.contrib.auth.password_validation import validate_password
 from .serializers import BaseUserSerializer,PatientSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from core.utils import Custom_CheckPermisson
 from . import permission
-
+from core.utils import Custom_CheckPermisson
+# from rest_framework.exceptions import APIException,MethodNotAllowed
+from core.utils import Custom_APIException
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -114,12 +113,12 @@ def split_name(full_name):
     return surname,firstname
     
    
-class PatientAPI(ModelViewSet):
+class PatientAPI(Custom_CheckPermisson,ModelViewSet):
     queryset = Patient.objects.all()    
     serializer_class = PatientSerializer
     permission_classes = [permission.CreateAction | (IsAuthenticated & (permission.IsOwner|permission.IsAdmin))]
-  
     
+
     def get_permissions(self):
         setattr(self.request,'action',self.action)
         return super().get_permissions()
@@ -174,6 +173,11 @@ class PatientAPI(ModelViewSet):
         data['staus']='201'
         return response.Response(data)
     
-            
+class DoctorAPI(ModelViewSet):
+    queryset = Doctor.objects.all()    
+    serializer_class = PatientSerializer
 
+#     def create(self, request, *args, **kwargs):
 
+#         return JsonResponse({'ds':'sd'})
+#         # return super().create(request, *args, **kwargs)

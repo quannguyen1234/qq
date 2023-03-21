@@ -4,7 +4,8 @@ from . import views
 router=SimpleRouter(trailing_slash=False)
 router.register('base-users',views.BaseUserAPI)
 router.register('patients',views.PatientAPI)
-from django.http import JsonResponse
+router.register('doctors',views.DoctorAPI)
+
 
 urlpatterns=[
     path('',include(router.urls)),

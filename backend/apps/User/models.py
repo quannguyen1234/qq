@@ -132,6 +132,10 @@ class Doctor(models.Model):
         db_table="Doctor"
 
     doctor_id=models.CharField(max_length=10,primary_key=True)
+    degree=models.CharField(max_length=20,null=False,default="")
+    current_job=models.CharField(max_length=20,null=False,default="")
+    notarized_image=models.TextField(null=False,default="")
+    is_approved=models.BooleanField(default=False)
     base_user=models.OneToOneField(BaseUser,related_name="user_doctor",on_delete=models.CASCADE)
 
     def __str__(self) -> str:
