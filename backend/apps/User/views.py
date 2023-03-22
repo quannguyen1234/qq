@@ -197,8 +197,8 @@ def match_data(request,serializer,*extra_field_base_user):
 class DoctorAPI(ModelViewSet):
     queryset = Doctor.objects.all()    
     serializer_class = DoctorSerializer
-    permission_classes=[permission.CreateAction |(permission.IsOwner)]
-
+    # permission_classes=[permission.CreateAction |(permission.IsOwner)]
+    permission_classes=[]
     def get_permissions(self):
 
         setattr(self.request,'action',self.action)
@@ -237,4 +237,15 @@ class DoctorAPI(ModelViewSet):
         return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
               
 
+    @action(methods=['post'],detail=True,url_path='active')
+    def approve_doctor(self,request,pk=None):
+        instance=self.get_object()
+        instance.base_user.active_user()
+        return JsonResponse({'message':'Active Successfully','status':'200'})
+    
+    @action(methods=['post'],detail=True,url_path='inactive')
+    def inapprove_doctor(self,request,pk=None):
+        instance=self.get_object()
+        instance.base_user.inactive_user()
+        return JsonResponse({'message':'Inactive Successfully','status':'201'})
     

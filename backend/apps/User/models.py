@@ -47,8 +47,16 @@ class BaseUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
     
+class MyUserManager:
+    def active_user(self):
+        self.is_active=True
+        self.save()
 
-class BaseUser(PermissionsMixin,AbstractBaseUser):
+    def inactive_user(self):
+        self.is_active=False
+        self.save()
+        
+class BaseUser(MyUserManager,PermissionsMixin,AbstractBaseUser):
     class Meta:
         db_table="BaseUser"
         

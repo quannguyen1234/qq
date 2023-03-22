@@ -6,7 +6,7 @@ USER_TYPE=(
 GENDER={
     (0,"Male"),
     (1,"Female"),
-    (2.,"Other")
+    (2,"Other")
 }
 REVERSE_USER_TYPE={
     'Doctor':0,
