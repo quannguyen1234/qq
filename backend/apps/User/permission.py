@@ -25,5 +25,6 @@ class CreateAction(BasePermission):
 class IsOwner(BasePermission):
 
     def has_object_permission(self, request, view, obj):
-    
-        return getattr(request.user,'user_patient')==obj
+        user=request.user
+        return getattr(user,RELATED_USER[user.user_type])==obj
+        

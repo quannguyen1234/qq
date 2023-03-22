@@ -121,6 +121,7 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
 
     def get_permissions(self):
         setattr(self.request,'action',self.action)
+
         return super().get_permissions()
     
     def create(self, request, *args, **kwargs):        
@@ -176,8 +177,14 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
 class DoctorAPI(ModelViewSet):
     queryset = Doctor.objects.all()    
     serializer_class = PatientSerializer
+    permission_classes=[permission.CreateAction |(permission.IsOwner)]
 
-#     def create(self, request, *args, **kwargs):
+    def get_permissions(self):
 
-#         return JsonResponse({'ds':'sd'})
-#         # return super().create(request, *args, **kwargs)
+        setattr(self.request,'action',self.action)
+        return super().get_permissions()
+    
+    def create(self, request, *args, **kwargs):
+
+        return JsonResponse({'ds':'sd'})
+        # return super().create(request, *args, **kwargs)
