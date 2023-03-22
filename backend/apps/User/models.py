@@ -147,6 +147,15 @@ class Doctor(models.Model):
     def get_id(self):
         return self.doctor_id
 
+    @staticmethod
+    def generate_doctor_id():
+        id=generate_id(10)
+        while Doctor.objects.filter(doctor_id=id).exists():
+            id=generate_id(10)
+            print("id:",id)
+        return id
+
+    
 class Patient(models.Model):
 
     class Meta:
@@ -163,7 +172,9 @@ class Patient(models.Model):
 
     def get_id(self):
         return self.patient_id
+
     
+
     @staticmethod
     def generate_patient_id():
         patient_id=generate_id(10)

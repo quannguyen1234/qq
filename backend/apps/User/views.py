@@ -5,12 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.http import JsonResponse
 from django.contrib.auth.password_validation import validate_password
-from .serializers import BaseUserSerializer,PatientSerializer
+from .serializers import BaseUserSerializer,PatientSerializer,DoctorSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from . import permission
 from core.utils import Custom_CheckPermisson
-# from rest_framework.exceptions import APIException,MethodNotAllowed
-from core.utils import Custom_APIException
+import uuid
+from django.core.files.storage import default_storage
+
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -126,7 +127,7 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
     
     def create(self, request, *args, **kwargs):        
         base_user_data=request.data['base_user']
-        print(base_user_data)
+      
         patient_id=Patient.generate_patient_id()
         request.data['patient_id']=patient_id
         surname,firstname=split_name(base_user_data.pop('full_name'))
@@ -174,9 +175,28 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
         data['staus']='201'
         return response.Response(data)
     
+
+def find_field(se):
+        current_object_fields=se.fields
+        nested_object_fields=dict(current_object_fields.pop('base_user').fields).keys() #get keys
+        current_object_fields=current_object_fields.keys() #get keys
+        return list(nested_object_fields)
+
+def match_data(request,serializer,*extra_field_base_user):
+    nested_object_fields=find_field(DoctorSerializer())
+    temp={'base_user':{}}
+    for key,value in request.data.items():
+        if  key in nested_object_fields or key in extra_field_base_user :
+            temp['base_user'].update({key:value})
+        else:
+            temp.update({key:value})  
+    return temp
+    
+    
+
 class DoctorAPI(ModelViewSet):
     queryset = Doctor.objects.all()    
-    serializer_class = PatientSerializer
+    serializer_class = DoctorSerializer
     permission_classes=[permission.CreateAction |(permission.IsOwner)]
 
     def get_permissions(self):
@@ -185,6 +205,36 @@ class DoctorAPI(ModelViewSet):
         return super().get_permissions()
     
     def create(self, request, *args, **kwargs):
+        request.data._mutable=True
+        data=match_data(request,self.serializer_class(),'full_name')
+        
+        doctor_id=Doctor.generate_doctor_id()
+        data['doctor_id']=doctor_id
+      
+        surname,firstname=split_name(data['base_user'].pop('full_name'))
+        print(data)
+        data['base_user']['surname']=surname
+        data['base_user']['firstname']=firstname
+        
+        # store image firebase
+        notarized_image=data.pop('notarized_image')
+        name=str(uuid.uuid4())+"."+notarized_image.name.split('.')[-1]
+        data['notarized_image']=name
+        
+        serializer = self.get_serializer(data=data)
+        
+        check,dict_error=is_valid(serializer,'400')
+        if not check:
+            return JsonResponse({**dict_error,**dict_error})
+        
+        default_storage.save(name, notarized_image)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        data=serializer.data
+        extra_data={'flag':'true','status':'201'}
+        
+        
+        return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
+              
 
-        return JsonResponse({'ds':'sd'})
-        # return super().create(request, *args, **kwargs)
+    
