@@ -11,16 +11,21 @@ class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BaseUser
         fields = ['id','phone_number','email','surname','firstname','surname','full_name','password',
-                  'citizen_identification','address','birth_day'
+                  'citizen_identification','address','birth_day','is_active'
                 ]
         extra_kwargs = {
             'id': {'required':False  },
             'firstname' : {'write_only':True},
             'surname' : {'write_only':True},
-            'password' : {'write_only':True}
+            'password' : {'write_only':True},
+            'is_active':{'read_only':True}
         }
     full_name=serializers.SerializerMethodField()
+    is_active=serializers.SerializerMethodField()
     
+    def get_is_active(self,instance):
+        return str(instance.is_active)
+        
     def get_full_name(self,instance):
         return instance.surname + ' ' + instance.firstname
 
@@ -95,23 +100,21 @@ def process_image(instance,name,url):
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
-        fields = ['doctor_id','degree','current_job','notarized_image','base_user','is_approved']
-        extra_kwargs = {
-            'is_approved': {'required':False}
-        }
+        fields = ['doctor_id','degree','current_job','notarized_image','base_user']
+       
 
     notarized_image=NotarizedimageField()
-    is_approved=serializers.SerializerMethodField()
+
     base_user = BaseUserSerializer()
     
-    def get_is_approved(self,instance):
-        return str(instance.is_approved)
+    # def get_is_approved(self,instance):
+    #     return str(instance.is_approved)
     
     @atomic
     def create(self, validated_data):
 
         base_user_data = validated_data.pop('base_user')
-        instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'])
+        instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
         instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
         process_image(instance,validated_data.get('notarized_image'),'images/notarized_image')
 
