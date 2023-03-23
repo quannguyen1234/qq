@@ -24,9 +24,9 @@ def expried_token(request):
             refresh_token.check_blacklist()
             refresh_token.blacklist()
         except:
-            return JsonResponse({'message':'refresh token expried or not exist','flag':'false','status':'403'})
+            return JsonResponse({'message':'refresh token expried or not exist','flag':False,'status':'403'})
     
-    return JsonResponse({'message':'Sucessfully','flag':'true','status':'200'})
+    return JsonResponse({'message':'Sucessfully','flag':True,'status':'200'})
 
 @require_http_methods(['GET'])
 @csrf_exempt
@@ -35,7 +35,7 @@ def check_token(request):
     try:
         token=AccessToken(token=token,verify=True)
     except Exception as e:
-        return JsonResponse({'message':str(e),'flag':'false','status':'403'})
+        return JsonResponse({'message':str(e),'flag':False,'status':'403'})
     
     base_user=BaseUser.objects.get(id=token.payload['user_id'])
     user=getattr(base_user,RELATED_USER[base_user.user_type])
@@ -52,7 +52,7 @@ def check_token(request):
     return JsonResponse(
         {
             'user':user_infor,
-            'flag':'true',
+            'flag':True,
             'status':'201'
         }
     )
@@ -94,9 +94,9 @@ def check_existed_email(request):
     email=request.POST.get('email')
     check=BaseUser.objects.filter(email=email).exists()
     if check:
-        return JsonResponse({'message':'Existed','flag':'true','status':'200'})
+        return JsonResponse({'message':'Existed','flag':True,'status':'200'})
     else:
-        return JsonResponse({'message':'Has not existed the email','flag':'false','status':'400'})
+        return JsonResponse({'message':'Has not existed the email','flag':False,'status':'400'})
 
 @require_http_methods(['POST'])
 @csrf_exempt
@@ -118,9 +118,9 @@ def otp_api(request):
         dict_otp['timeout_otp']={
             'time':json.dumps(now+timedelta(minutes=3),default=serialize_datetime),
         }
-        return JsonResponse({'message':'Successfully','flag':'true','status':'200'})
+        return JsonResponse({'message':'Successfully','flag':True,'status':'200'})
     else:
-        return JsonResponse({'message':'Not exist email','flag':'false','status':'400'})
+        return JsonResponse({'message':'Not exist email','flag':False,'status':'400'})
 
 
 @require_http_methods(['POST'])
@@ -132,7 +132,7 @@ def verify_otp_api(request):
         otp2=dict_otp['code_otp']
         email=dict_otp['email']
     except:
-        return JsonResponse({'message':'send otp before verifing','flag':'false','status':'409'})
+        return JsonResponse({'message':'send otp before verifing','flag':False,'status':'409'})
         
     if otp1 == otp2:
         request.session['exchangeable_password']={
@@ -140,9 +140,9 @@ def verify_otp_api(request):
             'check':True
         }
 
-        return JsonResponse({'message':'Successfully','flag':'true','status':'200'})
+        return JsonResponse({'message':'Successfully','flag':True,'status':'200'})
     else:
-        return JsonResponse({'message':'OTP has not right','flag':'false','status':'400'})
+        return JsonResponse({'message':'OTP has not right','flag':False,'status':'400'})
     
     
 

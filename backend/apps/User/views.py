@@ -37,7 +37,7 @@ class BaseUserAPI(ModelViewSet):
             validate_password(new_password)
         except Exception as e:
             return JsonResponse({
-                'message':'Password dont guarante for confidential','password':list(e),'flag':'false','status':'400'},
+                'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':'400'},
             )
      
         instance.password=new_password
@@ -45,7 +45,7 @@ class BaseUserAPI(ModelViewSet):
         return JsonResponse({
                 'message':'Sucessfully',
                 **get_tokens_for_user(request.user),
-                'flag':'true',
+                'flag':True,
                 'status':'200',
                 },
                 status=status.HTTP_200_OK
@@ -60,7 +60,7 @@ class BaseUserAPI(ModelViewSet):
         conditions=request.session.get('exchangeable_password',None)
         if conditions is not None and email is not None:
             if email != conditions['email']:
-                return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':'false','status':'403'})
+                return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':'403'})
             
             instance=BaseUser.objects.get(email=email)
             data=request.POST
@@ -69,7 +69,7 @@ class BaseUserAPI(ModelViewSet):
                 validate_password(new_password)
             except Exception as e:
                 return JsonResponse({
-                    'message':'Password dont guarante for confidential','password':list(e),'flag':'false','status':'400'}
+                    'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':'400'}
                 )
                 
             instance.password=new_password
@@ -77,17 +77,17 @@ class BaseUserAPI(ModelViewSet):
 
             request.session.__delitem__('exchangeable_password')# del flag change pass
             
-            return JsonResponse({'message':'successfully','flag':'true','status':'200'})
+            return JsonResponse({'message':'successfully','flag':True,'status':'200'})
         else:
-            return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':'false','status':'403'})
+            return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':'403'})
         
     @action(methods = ['post'], detail = False, url_path='check-password')
     def check_password(self,request):
         old_password=request.data.get('old_password')
         if request.user.check_password(old_password):
-            return JsonResponse({'message':'Old password matched','flag':'true','status':'200'})
+            return JsonResponse({'message':'Old password matched','flag':True,'status':'200'})
         else:
-            return JsonResponse({'message':'Old password did not match','flag':'false','status':'400'})
+            return JsonResponse({'message':'Old password did not match','flag':False,'status':'400'})
     
     
 def is_valid(serializer,status):
@@ -144,7 +144,7 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         data=serializer.data
-        extra_data={'flag':'true','status':'201'}
+        extra_data={'flag':True,'status':'201'}
         
         
         return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
@@ -231,7 +231,7 @@ class DoctorAPI(ModelViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         data=serializer.data
-        extra_data={'flag':'true','status':'201'}
+        extra_data={'flag':True,'status':'201'}
         
         
         return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
