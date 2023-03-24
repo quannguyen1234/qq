@@ -37,16 +37,16 @@ class BaseUserAPI(ModelViewSet):
             validate_password(new_password)
         except Exception as e:
             return JsonResponse({
-                'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':'400'},
+                'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':400},
             )
      
-        instance.password=new_password
+        instance.set_password(new_password)
         instance.save()
         return JsonResponse({
                 'message':'Sucessfully',
                 **get_tokens_for_user(request.user),
                 'flag':True,
-                'status':'200',
+                'status':200,
                 },
                 status=status.HTTP_200_OK
         )
@@ -60,7 +60,7 @@ class BaseUserAPI(ModelViewSet):
         conditions=request.session.get('exchangeable_password',None)
         if conditions is not None and email is not None:
             if email != conditions['email']:
-                return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':'403'})
+                return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
             
             instance=BaseUser.objects.get(email=email)
             data=request.POST
@@ -69,25 +69,25 @@ class BaseUserAPI(ModelViewSet):
                 validate_password(new_password)
             except Exception as e:
                 return JsonResponse({
-                    'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':'400'}
+                    'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':400}
                 )
-                
-            instance.password=new_password
+            
+            instance.set_password(new_password)
             instance.save()
 
             request.session.__delitem__('exchangeable_password')# del flag change pass
             
-            return JsonResponse({'message':'successfully','flag':True,'status':'200'})
+            return JsonResponse({'message':'successfully','flag':True,'status':200})
         else:
-            return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':'403'})
+            return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
         
     @action(methods = ['post'], detail = False, url_path='check-password')
     def check_password(self,request):
         old_password=request.data.get('old_password')
         if request.user.check_password(old_password):
-            return JsonResponse({'message':'Old password matched','flag':True,'status':'200'})
+            return JsonResponse({'message':'Old password matched','flag':True,'status':200})
         else:
-            return JsonResponse({'message':'Old password did not match','flag':False,'status':'400'})
+            return JsonResponse({'message':'Old password did not match','flag':False,'status':400})
     
     
 def is_valid(serializer,status):
@@ -137,14 +137,14 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
         
         serializer = self.get_serializer(data=request.data)
         
-        check,dict_error=is_valid(serializer,'400')
+        check,dict_error=is_valid(serializer,400)
         if not check:
             return JsonResponse({**dict_error,**dict_error})
             
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         data=serializer.data
-        extra_data={'flag':True,'status':'201'}
+        extra_data={'flag':True,'status':201}
         
         
         return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
@@ -161,7 +161,7 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
         base_user_data['firstname']=firstname
 
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        check,dict_error=is_valid(serializer,'400')
+        check,dict_error=is_valid(serializer,400)
         if not check:
             return JsonResponse(dict_error)
         self.perform_update(serializer)
@@ -171,8 +171,8 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
             # forcibly invalidate the prefetch cache on the instance.
             instance._prefetched_objects_cache = {}
         data=serializer.data
-        data['flag']='true'
-        data['staus']='201'
+        data['flag']=True
+        data['staus']=201
         return response.Response(data)
     
 
@@ -194,11 +194,11 @@ def match_data(request,serializer,*extra_field_base_user):
     
     
 
-class DoctorAPI(ModelViewSet):
+class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
     queryset = Doctor.objects.all()    
     serializer_class = DoctorSerializer
-    # permission_classes=[permission.CreateAction |(permission.IsOwner)]
-    permission_classes=[]
+    permission_classes=[permission.CreateAction |(IsAuthenticated & (permission.IsAdmin |permission.IsOwner))]
+    
     def get_permissions(self):
 
         setattr(self.request,'action',self.action)
@@ -231,7 +231,7 @@ class DoctorAPI(ModelViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         data=serializer.data
-        extra_data={'flag':True,'status':'201'}
+        extra_data={'flag':True,'status':201}
         
         
         return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
@@ -239,13 +239,16 @@ class DoctorAPI(ModelViewSet):
 
     @action(methods=['post'],detail=True,url_path='active')
     def approve_doctor(self,request,pk=None):
-        instance=self.get_object()
-        instance.base_user.active_user()
-        return JsonResponse({'message':'Active Successfully','status':'200'})
-    
+        # try:
+            instance=self.get_object()
+            instance.base_user.active_user()
+            return JsonResponse({'message':'Active Successfully','status':200,'flag':True})
+        # except:
+            # return JsonResponse({'message':'Active Fail','status':409,'flag':False})
+        
     @action(methods=['post'],detail=True,url_path='inactive')
     def inapprove_doctor(self,request,pk=None):
         instance=self.get_object()
         instance.base_user.inactive_user()
-        return JsonResponse({'message':'Inactive Successfully','status':'201'})
+        return JsonResponse({'message':'Inactive Successfully','status':201,'flag':True})
     

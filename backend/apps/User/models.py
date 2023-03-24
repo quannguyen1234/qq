@@ -77,7 +77,7 @@ class BaseUser(MyUserManager,PermissionsMixin,AbstractBaseUser):
     birth_day=models.DateField(null=True)
     created=models.DateField(auto_now=True)
     avatar=models.CharField(null=True,max_length=128)
-    is_hash=models.BooleanField(default=False)
+
 
     objects = BaseUserManager()
     
@@ -104,14 +104,7 @@ class BaseUser(MyUserManager,PermissionsMixin,AbstractBaseUser):
         if self.firstname is not None:
             self.firstname=self.firstname.title()
             
-        
-
-        # check if the password is hashed
-        if self.is_hash==False:
-            self.is_hash=True
-            self.set_password(self.password)
             
-        
         
         return super().save(*args,**kwagrs)
     

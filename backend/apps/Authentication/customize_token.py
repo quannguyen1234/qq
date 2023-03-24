@@ -12,7 +12,7 @@ class CustomizeTokenObtainPairSerializer(TokenObtainPairSerializer):
         try:
             data = super().validate(attrs)
         except:
-            return {'message':'No active account found with the given credentials','flag':False,'status':'400'}
+            return {'message':'No active account found with the given credentials','flag':False,'status':400}
                 
         try:
             user_type=self.user.user_type
@@ -28,9 +28,9 @@ class CustomizeTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'email':self.user.email
                 }
             data['user']=user
-            data['flag']='True'
-            data['status']='200'
+            data['flag']=True
+            data['status']=200
         except Exception as e:
-            return {'message':'Fail','flag':False,'status':'400'}
+            return {'message':'Fail','flag':False,'status':400}
         return data
     

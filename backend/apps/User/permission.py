@@ -21,6 +21,14 @@ class CreateAction(BasePermission):
         if request.action=="create":
             return True
         return False
+
+# class ApproveAction(BasePermission):
+    
+#     def has_permission(self, request, view):
+#         if request.action=="active" or request.action=="inactive":
+#             if request.user:
+#             return True
+#         return False
     
 class IsOwner(BasePermission):
 
@@ -28,3 +36,4 @@ class IsOwner(BasePermission):
         user=request.user
         return getattr(user,RELATED_USER[user.user_type])==obj
         
+    

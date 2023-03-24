@@ -48,29 +48,34 @@ class PatientSerializer(serializers.ModelSerializer):
     
     
     def validate(self, attrs):
-        return super().validate(attrs) 
+        return super().validate(attrs)
 
     @atomic
     def create(self, validated_data):
         base_user_data = validated_data.pop('base_user')
+
+        password=base_user_data.pop('password')
         instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Patient'])
+        instance_base_user.set_password(password)
+        instance_base_user.save()
         instance=Patient.objects.create(**validated_data,base_user=instance_base_user)
         return instance
     
     @atomic
     def update(self,instance,validated_data):
         base_user_data=validated_data.pop('base_user')
+
         base_user=instance.base_user
         base_user_serializer=BaseUserSerializer(instance=base_user)
         base_user_serializer.update(instance=base_user,validated_data=base_user_data)
+
+        if base_user_data.__contains__('password'):
+            base_user_data.set_password(base_user_data.password)
+            base_user_data.save()
         return super().update(instance,validated_data)
     
 
-# class ApprovedField(serializers.Field):
 
-#     def to_representation(self, value):
-#         return str(value)
-    
 
 class NotarizedimageField(serializers.Field):
 
@@ -115,6 +120,8 @@ class DoctorSerializer(serializers.ModelSerializer):
 
         base_user_data = validated_data.pop('base_user')
         instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
+        instance_base_user.set_password(instance_base_user.password)
+        instance_base_user.save()
         instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
         process_image(instance,validated_data.get('notarized_image'),'images/notarized_image')
 
