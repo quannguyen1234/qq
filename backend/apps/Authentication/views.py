@@ -11,8 +11,9 @@ from apps.Notification import functions
 from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
 from apps.User.references import RELATED_USER
 from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework_simplejwt.models import TokenUser
-from rest_framework_simplejwt.token_blacklist.models import  OutstandingToken
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
 
 @csrf_exempt
 def expried_token(request):
@@ -148,4 +149,83 @@ def verify_otp_api(request):
 
 
 
+    
+
+
+# def get_tokens_for_user(user):
+#     refresh = RefreshToken.for_user(user)
+
+#     return {
+#         'refresh': str(refresh),
+#         'access': str(refresh.access_token),
+#     }
+
+# class BaseUserAPI(ModelViewSet):
+#     queryset = BaseUser.objects.all()
+#     serializer_class = BaseUserSerializer
+#     permission_classes = []
+
+
+#     @action(methods = ['patch'], detail = False, url_path='change-password')
+#     def change_password(self,request):       
+#         request.data._mutable=True 
+#         new_password=request.data.get('new_password')
+#         instance=request.user
+        
+#         try:
+#             validate_password(new_password)
+#         except Exception as e:
+#             return JsonResponse({
+#                 'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':400},
+#             )
+     
+#         instance.set_password(new_password)
+#         instance.save()
+#         return JsonResponse({
+#                 'message':'Sucessfully',
+#                 **get_tokens_for_user(request.user),
+#                 'flag':True,
+#                 'status':200,
+#                 },
+#                 status=status.HTTP_200_OK
+#         )
+        
+        
+    
+#     @action(methods = ['patch'], detail = False, url_path='reset-password')
+#     def reset_password(self,request):
+       
+#         email=request.data.get('email',None)
+#         conditions=request.session.get('exchangeable_password',None)
+#         if conditions is not None and email is not None:
+#             if email != conditions['email']:
+#                 return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
+            
+#             instance=BaseUser.objects.get(email=email)
+#             data=request.POST
+#             new_password=data.get('new_password')
+#             try:
+#                 validate_password(new_password)
+#             except Exception as e:
+#                 return JsonResponse({
+#                     'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':400}
+#                 )
+            
+#             instance.set_password(new_password)
+#             instance.save()
+
+#             request.session.__delitem__('exchangeable_password')# del flag change pass
+            
+#             return JsonResponse({'message':'successfully','flag':True,'status':200})
+#         else:
+#             return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
+        
+#     @action(methods = ['post'], detail = False, url_path='check-password')
+#     def check_password(self,request):
+#         old_password=request.data.get('old_password')
+#         if request.user.check_password(old_password):
+#             return JsonResponse({'message':'Old password matched','flag':True,'status':200})
+#         else:
+#             return JsonResponse({'message':'Old password did not match','flag':False,'status':400})
+    
     

@@ -1,117 +1,19 @@
-from .models import BaseUser,Patient,Doctor
+from .models import Patient,Doctor,BaseUser
 from rest_framework import status,response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.http import JsonResponse
-from django.contrib.auth.password_validation import validate_password
-from .serializers import BaseUserSerializer,PatientSerializer,DoctorSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
+
+from .serializers import PatientSerializer,DoctorSerializer
 from . import permission
 from core.utils import Custom_CheckPermisson
 import uuid
 from django.core.files.storage import default_storage
-
-
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
-
-class BaseUserAPI(ModelViewSet):
-    queryset = BaseUser.objects.all()
-    serializer_class = BaseUserSerializer
-    permission_classes = []
-
-
-    @action(methods = ['patch'], detail = False, url_path='change-password')
-    def change_password(self,request):       
-        request.data._mutable=True 
-        new_password=request.data.get('new_password')
-        instance=request.user
-        
-        try:
-            validate_password(new_password)
-        except Exception as e:
-            return JsonResponse({
-                'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':400},
-            )
-     
-        instance.set_password(new_password)
-        instance.save()
-        return JsonResponse({
-                'message':'Sucessfully',
-                **get_tokens_for_user(request.user),
-                'flag':True,
-                'status':200,
-                },
-                status=status.HTTP_200_OK
-        )
-        
-        
-    
-    @action(methods = ['patch'], detail = False, url_path='reset-password')
-    def reset_password(self,request):
-       
-        email=request.data.get('email',None)
-        conditions=request.session.get('exchangeable_password',None)
-        if conditions is not None and email is not None:
-            if email != conditions['email']:
-                return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
-            
-            instance=BaseUser.objects.get(email=email)
-            data=request.POST
-            new_password=data.get('new_password')
-            try:
-                validate_password(new_password)
-            except Exception as e:
-                return JsonResponse({
-                    'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':400}
-                )
-            
-            instance.set_password(new_password)
-            instance.save()
-
-            request.session.__delitem__('exchangeable_password')# del flag change pass
-            
-            return JsonResponse({'message':'successfully','flag':True,'status':200})
-        else:
-            return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
-        
-    @action(methods = ['post'], detail = False, url_path='check-password')
-    def check_password(self,request):
-        old_password=request.data.get('old_password')
-        if request.user.check_password(old_password):
-            return JsonResponse({'message':'Old password matched','flag':True,'status':200})
-        else:
-            return JsonResponse({'message':'Old password did not match','flag':False,'status':400})
-    
-    
-def is_valid(serializer,status):
-    try:
-        serializer.is_valid(raise_exception=True)
-    except Exception as e:
-        dict_error=e.__dict__['detail']
-        dict_error['flag']='false'
-        dict_error['status']=status
-
-        return False, dict_error
-    return True,{}
-
-def split_name(full_name):
-    arr=full_name.split(" ")
-    surname=arr[0:-1]
-    firstname=arr[-1]
-
-    if len(surname)==0:
-        surname=""
-    else:
-        surname=" ".join(surname)
-
-    return surname,firstname
+from core.utils import split_name,is_valid
+from apps.User.serializers import BaseUserSerializer
+from rest_framework.decorators import action
+from django.contrib.auth.password_validation import validate_password
     
    
 class PatientAPI(Custom_CheckPermisson,ModelViewSet):
@@ -251,4 +153,84 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
         instance=self.get_object()
         instance.base_user.inactive_user()
         return JsonResponse({'message':'Inactive Successfully','status':201,'flag':True})
+    
+
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+class BaseUserAPI(ModelViewSet):
+    queryset = BaseUser.objects.all()
+    serializer_class = BaseUserSerializer
+    permission_classes = []
+
+
+    @action(methods = ['patch'], detail = False, url_path='change-password')
+    def change_password(self,request):       
+        request.data._mutable=True 
+        new_password=request.data.get('new_password')
+        instance=request.user
+        
+        try:
+            validate_password(new_password)
+        except Exception as e:
+            return JsonResponse({
+                'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':400},
+            )
+     
+        instance.set_password(new_password)
+        instance.save()
+        return JsonResponse({
+                'message':'Sucessfully',
+                **get_tokens_for_user(request.user),
+                'flag':True,
+                'status':200,
+                },
+                status=status.HTTP_200_OK
+        )
+        
+        
+    
+    @action(methods = ['patch'], detail = False, url_path='reset-password')
+    def reset_password(self,request):
+       
+        email=request.data.get('email',None)
+        conditions=request.session.get('exchangeable_password',None)
+        if conditions is not None and email is not None:
+            if email != conditions['email']:
+                return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
+            
+            instance=BaseUser.objects.get(email=email)
+            data=request.POST
+            new_password=data.get('new_password')
+            try:
+                validate_password(new_password)
+            except Exception as e:
+                return JsonResponse({
+                    'message':'Password dont guarante for confidential','password':list(e),'flag':False,'status':400}
+                )
+            
+            instance.set_password(new_password)
+            instance.save()
+
+            request.session.__delitem__('exchangeable_password')# del flag change pass
+            
+            return JsonResponse({'message':'successfully','flag':True,'status':200})
+        else:
+            return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
+        
+    @action(methods = ['post'], detail = False, url_path='check-password')
+    def check_password(self,request):
+        old_password=request.data.get('old_password')
+        if request.user.check_password(old_password):
+            return JsonResponse({'message':'Old password matched','flag':True,'status':200})
+        else:
+            return JsonResponse({'message':'Old password did not match','flag':False,'status':400})
+    
     

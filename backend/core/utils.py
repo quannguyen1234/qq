@@ -29,3 +29,27 @@ class Custom_CheckPermisson:
                 "flag":'false',
                 "status":'403'
             })
+
+
+def is_valid(serializer,status):
+    try:
+        serializer.is_valid(raise_exception=True)
+    except Exception as e:
+        dict_error=e.__dict__['detail']
+        dict_error['flag']='false'
+        dict_error['status']=status
+
+        return False, dict_error
+    return True,{}
+
+def split_name(full_name):
+    arr=full_name.split(" ")
+    surname=arr[0:-1]
+    firstname=arr[-1]
+
+    if len(surname)==0:
+        surname=""
+    else:
+        surname=" ".join(surname)
+
+    return surname,firstname
