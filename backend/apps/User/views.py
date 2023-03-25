@@ -14,7 +14,7 @@ from core.utils import split_name,is_valid
 from apps.User.serializers import BaseUserSerializer
 from rest_framework.decorators import action
 from django.contrib.auth.password_validation import validate_password
-    
+from rest_framework_simplejwt.tokens import RefreshToken
    
 class PatientAPI(Custom_CheckPermisson,ModelViewSet):
     queryset = Patient.objects.all()    
@@ -207,7 +207,7 @@ class BaseUserAPI(ModelViewSet):
                 return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
             
             instance=BaseUser.objects.get(email=email)
-            data=request.POST
+            data=request.data
             new_password=data.get('new_password')
             try:
                 validate_password(new_password)

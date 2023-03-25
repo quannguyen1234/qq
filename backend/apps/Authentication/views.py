@@ -1,9 +1,7 @@
 import math, random
 from apps.User.models import BaseUser
 from django.http import JsonResponse
-from rest_framework import status
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
+
 import json 
 import datetime
 from datetime import timedelta
@@ -16,9 +14,10 @@ from rest_framework.decorators import api_view,permission_classes
 
 
 
-@csrf_exempt
+@api_view(['POST'])
+@permission_classes([])
 def expried_token(request):
-    refresh_token=request.POST.get('refresh',None)
+    refresh_token=request.data.get('refresh',None)
     if refresh_token is not None:
 
         try:
@@ -30,8 +29,8 @@ def expried_token(request):
     
     return JsonResponse({'message':'Sucessfully','flag':True,'status':200})
 
-@require_http_methods(['GET'])
-@csrf_exempt
+@api_view(['GET'])
+@permission_classes([])
 def check_token(request):
     token = request.META.get('HTTP_AUTHORIZATION', " ").split(' ')[1]
     try:
@@ -92,18 +91,18 @@ def send_otp(receiver):
 @api_view(['POST'])
 @permission_classes([])
 def check_existed_email(request):
-    
-    email=request.POST.get('email')
+    email=request.data.get('email')
+    print(email)
     check=BaseUser.objects.filter(email=email).exists()
     if check:
         return JsonResponse({'message':'Existed','flag':True,'status':200})
     else:
         return JsonResponse({'message':'Has not existed the email','flag':False,'status':400})
 
-@require_http_methods(['POST'])
-@csrf_exempt
+@api_view(['POST'])
+@permission_classes([])
 def otp_api(request):
-    email=request.POST.get('email',None)
+    email=request.data.get('email',None)
     check_mail=False
     if BaseUser.objects.filter(email=email).exists():
         check_mail=True
@@ -125,12 +124,12 @@ def otp_api(request):
         return JsonResponse({'message':'Not exist email','flag':False,'status':400})
 
 
-@require_http_methods(['POST'])
-@csrf_exempt
+@api_view(['POST'])
+@permission_classes([])
 def verify_otp_api(request):
     dict_otp=request.session.get('otp')
     try:
-        otp1=request.POST['otp']
+        otp1=request.data['otp']
         otp2=dict_otp['code_otp']
         email=dict_otp['email']
     except:
