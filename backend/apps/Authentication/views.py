@@ -12,6 +12,7 @@ from rest_framework_simplejwt.tokens import AccessToken,RefreshToken
 from apps.User.references import RELATED_USER
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import api_view,permission_classes
 
 
 
@@ -88,8 +89,8 @@ def send_otp(receiver):
     functions.send_email(receiver,"Reset Password",body)
     return OTP
 
-@require_http_methods(['POST'])
-@csrf_exempt
+@api_view(['POST'])
+@permission_classes([])
 def check_existed_email(request):
     
     email=request.POST.get('email')
