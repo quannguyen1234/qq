@@ -30,6 +30,17 @@ services:
              python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
     env_file: ./backend/.env
+
+  redis:
+    image: 'bitnami/redis:7.0'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - '6379:6379'
+    volumes:
+    - ./redis/path/to/certs:/opt/bitnami/redis/certs
+    - ./reids/path/to/redis-persistence:/bitnami/redis/data
+  
     
     
     

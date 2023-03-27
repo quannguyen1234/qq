@@ -1,7 +1,7 @@
 import math, random
 from apps.User.models import BaseUser
 from django.http import JsonResponse
-
+from django.core.cache import cache
 import json 
 import datetime
 from datetime import timedelta
@@ -91,8 +91,8 @@ def send_otp(receiver):
 @api_view(['POST'])
 @permission_classes([])
 def check_existed_email(request):
+
     email=request.data.get('email')
-    print(email)
     check=BaseUser.objects.filter(email=email).exists()
     if check:
         return JsonResponse({'message':'Existed','flag':True,'status':200})
@@ -109,16 +109,12 @@ def otp_api(request):
     
     if  email is not None  and check_mail:
         OTP=send_otp(email)
-        
-        now=datetime.datetime.now()
-        request.session['otp']={}
-        request.session.set_expiry(300)
-        dict_otp=request.session.get('otp')
-        dict_otp['code_otp']=OTP
-        dict_otp['email']=email
-        dict_otp['timeout_otp']={
-            'time':json.dumps(now+timedelta(minutes=3),default=serialize_datetime),
-        }
+        print(OTP)
+        key=f"{email}_otp"
+        if cache.get(key,None) is not None:
+            cache.delete(key)
+        cache.set(key,OTP,timeout=180)
+
         return JsonResponse({'message':'Successfully','flag':True,'status':200})
     else:
         return JsonResponse({'message':'Not exist email','flag':False,'status':400})
@@ -127,20 +123,20 @@ def otp_api(request):
 @api_view(['POST'])
 @permission_classes([])
 def verify_otp_api(request):
-    dict_otp=request.session.get('otp')
+    email=request.data.get('email')
+    key=f"{email}_otp"
     try:
+        if  cache.get(key) is  None:
+            raise ValueError("Send otp before")
         otp1=request.data['otp']
-        otp2=dict_otp['code_otp']
-        email=dict_otp['email']
+        otp2=cache.get(key,None)
+
     except:
         return JsonResponse({'message':'send otp before verifing','flag':False,'status':409})
         
     if otp1 == otp2:
-        request.session['exchangeable_password']={
-            'email':email,
-            'check':True
-        }
 
+        cache.set(f'{email}_exchangeable_password',True,timeout=300)
         return JsonResponse({'message':'Successfully','flag':True,'status':200})
     else:
         return JsonResponse({'message':'OTP has not right','flag':False,'status':400})

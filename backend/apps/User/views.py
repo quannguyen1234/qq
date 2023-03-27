@@ -4,7 +4,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.http import JsonResponse
-
+from django.core.cache import cache
 from .serializers import PatientSerializer,DoctorSerializer
 from . import permission
 from core.utils import Custom_CheckPermisson
@@ -201,11 +201,10 @@ class BaseUserAPI(ModelViewSet):
     def reset_password(self,request):
        
         email=request.data.get('email',None)
-        conditions=request.session.get('exchangeable_password',None)
-        if conditions is not None and email is not None:
-            if email != conditions['email']:
-                return JsonResponse({'message':'Forbiden, Confirm otp before reseting password','flag':False,'status':403})
-            
+        conditions=cache.get(f'{email}_exchangeable_password',False)
+        
+        if conditions != False and email is not None:
+
             instance=BaseUser.objects.get(email=email)
             data=request.data
             new_password=data.get('new_password')
@@ -218,8 +217,6 @@ class BaseUserAPI(ModelViewSet):
             
             instance.set_password(new_password)
             instance.save()
-
-            request.session.__delitem__('exchangeable_password')# del flag change pass
             
             return JsonResponse({'message':'successfully','flag':True,'status':200})
         else:
