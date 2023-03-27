@@ -1,6 +1,7 @@
 version: '3'
 services:
   db:
+    platform: linux/x86_64
     image: mysql:8.0.32-debian
     volumes:
       - ./data/db:/var/lib/mysql
