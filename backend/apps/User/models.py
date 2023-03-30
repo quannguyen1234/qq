@@ -156,6 +156,9 @@ class Doctor(models.Model):
             print("id:")
         return id
 
+    @property
+    def notarized_images(self):
+        return self.base_user.images.values_list('url', flat=True)
     
 class Patient(models.Model):
 

@@ -4,7 +4,7 @@ from core.references import ImageEnum
 import uuid
 # Create your models here.
 
-# doctor
+
 class HospitalDepartment(models.Model):
 
     class Meta:
@@ -12,13 +12,15 @@ class HospitalDepartment(models.Model):
 
     de_id=models.CharField(primary_key=True,max_length=8)
     name=models.CharField(null=False,max_length=255)
-    # departments=models.ManyToManyField(through='DoctorDepartment')
+    doctors=models.ManyToManyField(Doctor,through='DoctorDepartment',related_name='departments')
 
 
 class DoctorDepartment(models.Model):
     do_de_id=models.CharField(primary_key=True,max_length=16)
     de=models.ForeignKey(HospitalDepartment,on_delete=models.CASCADE,null=False)
     doctor=models.ForeignKey(Doctor,on_delete=models.CASCADE,null=False)
+    
+   
 
 class Image(models.Model):
     

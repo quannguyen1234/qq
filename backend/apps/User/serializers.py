@@ -1,12 +1,11 @@
 from .models import BaseUser,Patient,Doctor
-from apps.PersonalManagement.models import Image
+from apps.PersonalManagement.models import Image,HospitalDepartment
 from rest_framework import serializers
 from django.db.transaction import atomic
 from django.contrib.auth.password_validation import validate_password as validate_password_defaulf
 from apps.User.references import REVERSE_USER_TYPE
 from abc import ABC
-from core.config_outsystems.cfg_firebase import storage,firebase_admin
-from django.core.files.storage import default_storage
+
 import uuid,os
 from core.references import ImageEnum
 class BaseUserSerializer(serializers.ModelSerializer):
@@ -14,7 +13,7 @@ class BaseUserSerializer(serializers.ModelSerializer):
         model = BaseUser
         fields = ['id','phone_number','email','surname','firstname','surname','full_name','password',
                   'citizen_identification','address','birth_day','is_active'
-                ]
+                ]   
         extra_kwargs = {
             'id': {'required':False  },
             'firstname' : {'write_only':True},
@@ -81,76 +80,49 @@ class PatientSerializer(serializers.ModelSerializer):
 
 
 
-class NotarizedimageField(serializers.Field):
 
-    def to_representation(self, instance):
-    
-        if instance is None:
-            return None
-        
-        return storage.child("images/notarized_image/{}".format(instance)).get_url(firebase_admin['idToken'])
-    
-    def to_internal_value(self, data):
-        return data
 
-def process_image(instance,name,url):
-    
-    # check exist image
-    list_old_image=Image.objects.filter(
-        base_user__user_doctor=instance,
-        image_type=ImageEnum.DoctorNotarizedImage.value
-    )
-    for img in list_old_image:
-        try:
-            storage.delete("{}/{}".format(url,img.name),firebase_admin['idToken']) 
-        except:
-            pass
- 
-    
-    storage.child("{}/{}".format(url,name)).put("media/"+name)
-    
-    if os.path.exists("media/"+name):
-        os.remove("media/"+name)
+class HospitalDepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=HospitalDepartment
+        exclude=['doctors']
 
-    url=storage.child("images/notarized_image/{}".format(name)).get_url(firebase_admin['idToken'])
-    Image.objects.create(
-        url=url,
-        name=name,
-        base_user=instance.base_user,
-        image_type=ImageEnum.DoctorNotarizedImage.value
-    )
-    return url
+# class DepartmentSerializer(serializers.RelatedField):
+#     def to_representation(self, value):
+#         return 
+
+
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
-        fields = ['doctor_id','degree','current_job','base_user','notarized_images']
+        fields = ['doctor_id','degree','current_job','base_user','notarized_images','departments']
     
     notarized_images=serializers.ListField(child=serializers.CharField())
     base_user = BaseUserSerializer()
+    departments=HospitalDepartmentSerializer(many=True)
     
-
 
     def get_is_approved(self,instance):
         return str(instance.is_approved)
-    
-    @atomic
-    def create(self, validated_data):
-        list_image=validated_data.pop('notarized_images')
+   
+    # @atomic
+    # def create(self, validated_data):
+    #     list_image=validated_data.pop('notarized_images')
 
-        base_user_data = validated_data.pop('base_user')
-        instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
-        instance_base_user.set_password(instance_base_user.password)
-        instance_base_user.save()
-        instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
-        notarized_images=[]
+    #     base_user_data = validated_data.pop('base_user')
+    #     instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
+    #     instance_base_user.set_password(instance_base_user.password)
+    #     instance_base_user.save()
+    #     instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
+    #     notarized_images=[]
         
-        for image  in list_image: 
+    #     for image  in list_image: 
 
-            url=process_image(instance,image,'images/notarized_image')
-            notarized_images.append(url)
-        instance.notarized_images=notarized_images                 
+    #         url=process_image(instance,image,'images/notarized_image')
+    #         notarized_images.append(url)
+    #     instance.notarized_images=notarized_images                 
 
-        return instance
+    #     return instance
     
 
     
