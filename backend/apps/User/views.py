@@ -3,6 +3,9 @@ from rest_framework import status,response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.parsers import MultiPartParser, JSONParser,FormParser
+from rest_framework.decorators import action
 from django.http import JsonResponse
 from django.core.cache import cache
 from .serializers import PatientSerializer,DoctorSerializer
@@ -12,10 +15,9 @@ import uuid
 from django.core.files.storage import default_storage
 from core.utils import split_name,is_valid
 from apps.User.serializers import BaseUserSerializer
-from rest_framework.decorators import action
+
 from django.contrib.auth.password_validation import validate_password
-from rest_framework_simplejwt.tokens import RefreshToken
-   
+
 class PatientAPI(Custom_CheckPermisson,ModelViewSet):
     queryset = Patient.objects.all()    
     serializer_class = PatientSerializer
@@ -84,23 +86,54 @@ def find_field(se):
         current_object_fields=current_object_fields.keys() #get keys
         return list(nested_object_fields)
 
-def match_data(request,serializer,*extra_field_base_user):
+def handle_file(request,key,file_fields):
+    if key in file_fields:
+        values=request.data.getlist(key)
+        return values
+    return None
+        
+    
+def match_data(request,serializer,file_fields,*extra_field_base_user):
     nested_object_fields=find_field(DoctorSerializer())
     temp={'base_user':{}}
     for key,value in request.data.items():
+
+        value_file=handle_file(request,key,file_fields) # check file arr
         if  key in nested_object_fields or key in extra_field_base_user :
-            temp['base_user'].update({key:value})
+            if value_file is not None:
+                temp['base_user'].update({key:value_file})
+            else:
+                temp['base_user'].update({key:value})
+            
         else:
-            temp.update({key:value})  
+            if value_file is not None:
+                temp.update({key:value_file})
+            else:
+                temp.update({key:value})
     return temp
     
-    
+def get_file_name(file):
+    name=str(uuid.uuid4())+"."+file.name.split('.')[-1]
+    return name
 
+def save_file(name,file):
+    default_storage.save(name, file)
+
+
+def set_name_file(data,field_name):
+    list_image=data.pop(field_name)
+    list_name=[]
+    for image in list_image:
+        list_name.append(get_file_name(image))
+        
+    data[field_name]=list_name
+    return list_image,list_name
 class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
     queryset = Doctor.objects.all()    
     serializer_class = DoctorSerializer
-    permission_classes=[permission.CreateAction |(IsAuthenticated & (permission.IsAdmin |permission.IsOwner))]
-    
+    permission_classes=[]
+    # permission_classes=[permission.CreateAction |(IsAuthenticated & (permission.IsAdmin |permission.IsOwner))]
+    parser_classes=[MultiPartParser,FormParser]
     def get_permissions(self):
 
         setattr(self.request,'action',self.action)
@@ -108,28 +141,27 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         request.data._mutable=True
-        data=match_data(request,self.serializer_class(),'full_name')
+        
+        data=match_data(request,self.serializer_class(),['notarized_images'],'full_name')
         
         doctor_id=Doctor.generate_doctor_id()
         data['doctor_id']=doctor_id
       
         surname,firstname=split_name(data['base_user'].pop('full_name'))
-        print(data)
+
         data['base_user']['surname']=surname
         data['base_user']['firstname']=firstname
         
-        # store image firebase
-        notarized_image=data.pop('notarized_image')
-        name=str(uuid.uuid4())+"."+notarized_image.name.split('.')[-1]
-        data['notarized_image']=name
-        
+        list_notarized_image,list_name=set_name_file(data,'notarized_images')
         serializer = self.get_serializer(data=data)
         
         check,dict_error=is_valid(serializer,'400')
+        
         if not check:
             return JsonResponse({**dict_error,**dict_error})
+        for index,image in enumerate(list_notarized_image):
+            save_file(list_name[index],image)
         
-        default_storage.save(name, notarized_image)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         data=serializer.data
@@ -137,16 +169,16 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
         
         
         return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
-              
+
 
     @action(methods=['post'],detail=True,url_path='active')
     def approve_doctor(self,request,pk=None):
-        # try:
+        try:
             instance=self.get_object()
             instance.base_user.active_user()
             return JsonResponse({'message':'Active Successfully','status':200,'flag':True})
-        # except:
-            # return JsonResponse({'message':'Active Fail','status':409,'flag':False})
+        except:
+            return JsonResponse({'message':'Active Fail','status':409,'flag':False})
         
     @action(methods=['post'],detail=True,url_path='inactive')
     def inapprove_doctor(self,request,pk=None):

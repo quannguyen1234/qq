@@ -1,4 +1,5 @@
 from .models import BaseUser,Patient,Doctor
+from apps.PersonalManagement.models import Image
 from rest_framework import serializers
 from django.db.transaction import atomic
 from django.contrib.auth.password_validation import validate_password as validate_password_defaulf
@@ -7,6 +8,7 @@ from abc import ABC
 from core.config_outsystems.cfg_firebase import storage,firebase_admin
 from django.core.files.storage import default_storage
 import uuid,os
+from core.references import ImageEnum
 class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BaseUser
@@ -20,11 +22,13 @@ class BaseUserSerializer(serializers.ModelSerializer):
             'password' : {'write_only':True},
             'is_active':{'read_only':True}
         }
+        
+    birth_day=serializers.DateField(input_formats=['%m-%d-%Y'])
     full_name=serializers.SerializerMethodField()
     is_active=serializers.SerializerMethodField()
     
     def get_is_active(self,instance):
-        return str(instance.is_active)
+        return instance.is_active
         
     def get_full_name(self,instance):
         return instance.surname + ' ' + instance.firstname
@@ -90,40 +94,61 @@ class NotarizedimageField(serializers.Field):
         return data
 
 def process_image(instance,name,url):
-    if instance is not None:
+    
+    # check exist image
+    list_old_image=Image.objects.filter(
+        base_user__user_doctor=instance,
+        image_type=ImageEnum.DoctorNotarizedImage.value
+    )
+    for img in list_old_image:
         try:
-            storage.delete("{}/{}".format(url,instance.notarized_image),firebase_admin['idToken']) 
+            storage.delete("{}/{}".format(url,img.name),firebase_admin['idToken']) 
         except:
             pass
-    instance.notarized_image=name
+ 
     
     storage.child("{}/{}".format(url,name)).put("media/"+name)
     
     if os.path.exists("media/"+name):
         os.remove("media/"+name)
 
+    url=storage.child("images/notarized_image/{}".format(name)).get_url(firebase_admin['idToken'])
+    Image.objects.create(
+        url=url,
+        name=name,
+        base_user=instance.base_user,
+        image_type=ImageEnum.DoctorNotarizedImage.value
+    )
+    return url
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
-        fields = ['doctor_id','degree','current_job','notarized_image','base_user']
-       
-
-    notarized_image=NotarizedimageField()
-
+        fields = ['doctor_id','degree','current_job','base_user','notarized_images']
+    
+    notarized_images=serializers.ListField(child=serializers.CharField())
     base_user = BaseUserSerializer()
     
-    # def get_is_approved(self,instance):
-    #     return str(instance.is_approved)
+
+
+    def get_is_approved(self,instance):
+        return str(instance.is_approved)
     
     @atomic
     def create(self, validated_data):
+        list_image=validated_data.pop('notarized_images')
 
         base_user_data = validated_data.pop('base_user')
         instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
         instance_base_user.set_password(instance_base_user.password)
         instance_base_user.save()
         instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
-        process_image(instance,validated_data.get('notarized_image'),'images/notarized_image')
+        notarized_images=[]
+        
+        for image  in list_image: 
+
+            url=process_image(instance,image,'images/notarized_image')
+            notarized_images.append(url)
+        instance.notarized_images=notarized_images                 
 
         return instance
     

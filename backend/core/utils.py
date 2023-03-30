@@ -35,10 +35,10 @@ def is_valid(serializer,status):
     try:
         serializer.is_valid(raise_exception=True)
     except Exception as e:
+        print("------cxd---",e)
         dict_error=e.__dict__['detail']
         dict_error['flag']='false'
         dict_error['status']=status
-
         return False, dict_error
     return True,{}
 

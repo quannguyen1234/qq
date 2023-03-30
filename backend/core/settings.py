@@ -41,8 +41,8 @@ INSTALLED_APPS = [
     'django_redis',
     'apps.User',
     'apps.Authentication',
+    'apps.PersonalManagement',
     'corsheaders',
-    
 ]
 
 MIDDLEWARE = [

@@ -39,8 +39,8 @@ services:
     ports:
       - '6379:6379'
     volumes:
-    - ./redis/path/to/certs:/opt/bitnami/redis/certs
-    - ./reids/path/to/redis-persistence:/bitnami/redis/data
+    - ./redis/data:/data
+    - ./redis/config:/conf
   
     
     

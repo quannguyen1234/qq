@@ -44,7 +44,9 @@ class BaseUserManager(BaseUserManager):
             firstname=firstname,
         )
         user.is_superuser = True
+        user.set_password(password)
         user.save(using=self._db)
+        
         return user
     
 class MyUserManager:
@@ -135,7 +137,6 @@ class Doctor(models.Model):
     doctor_id=models.CharField(max_length=10,primary_key=True)
     degree=models.CharField(max_length=20,null=False,default="")
     current_job=models.CharField(max_length=20,null=False,default="")
-    notarized_image=models.TextField(null=False,default="")
     base_user=models.OneToOneField(BaseUser,related_name="user_doctor",on_delete=models.CASCADE)
 
     def __str__(self) -> str:
