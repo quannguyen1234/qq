@@ -9,6 +9,7 @@ from django import forms
 # admin.site.register(BaseUser)
 admin.site.register(Doctor)
 admin.site.register(Patient)
+admin.site.register(Admin)
 
 
 

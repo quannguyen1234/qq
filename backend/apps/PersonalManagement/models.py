@@ -22,7 +22,7 @@ class DoctorDepartment(models.Model):
     de=models.ForeignKey(HospitalDepartment,on_delete=models.CASCADE,null=False)
     doctor=models.ForeignKey(Doctor,on_delete=models.CASCADE,null=False)
     
-   
+
 
 class Image(models.Model):
     
