@@ -136,7 +136,8 @@ class Doctor(models.Model):
 
     doctor_id=models.CharField(max_length=10,primary_key=True)
     degree=models.CharField(max_length=20,null=False,default="")
-    current_job=models.CharField(max_length=20,null=False,default="")
+    current_job=models.TextField(null=False,default="")
+    expreience=models.TextField(null=False,default="")
     base_user=models.OneToOneField(BaseUser,related_name="user_doctor",on_delete=models.CASCADE)
 
     def __str__(self) -> str:
@@ -153,7 +154,6 @@ class Doctor(models.Model):
         id=generate_id(10)
         while Doctor.objects.filter(doctor_id=id).exists():
             id=generate_id(10)
-            print("id:")
         return id
 
     @property

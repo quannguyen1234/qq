@@ -40,7 +40,7 @@ def is_valid(serializer,status):
     try:
         serializer.is_valid(raise_exception=True)
     except Exception as e:
-        print("------cxd---",e)
+        
         dict_error=e.__dict__['detail']
         dict_error['flag']='false'
         dict_error['status']=status
@@ -143,10 +143,9 @@ def process_image(instance,name,url):
     )
     return url
 
-def upload_image(name,url,image_type):
+def upload_image(name,group_url,image_type):
      
-    
-    storage.child("{}/{}".format(url,name)).put("media/"+name)
+    storage.child("{}/{}".format(group_url,name)).put("media/"+name)
   
     url=storage.child("images/notarized_image/{}".format(name)).get_url(firebase_admin['idToken'])
     Image.objects.create(
@@ -155,3 +154,10 @@ def upload_image(name,url,image_type):
         image_type=image_type
     )
     return url
+
+def delete_image(url):
+    try:
+        storage.delete("{}/{}".format(url),firebase_admin['idToken']) 
+    except:
+        pass
+

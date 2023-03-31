@@ -1,4 +1,5 @@
 from .models import Patient,Doctor,BaseUser
+from apps.PersonalManagement.models import DoctorDepartment,HospitalDepartment
 from rest_framework import status,response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
@@ -16,7 +17,7 @@ from core.utils import( Custom_CheckPermisson,
 )
 from apps.User.serializers import BaseUserSerializer
 from django.contrib.auth.password_validation import validate_password
-
+from django.db.transaction import atomic
 class PatientAPI(Custom_CheckPermisson,ModelViewSet):
     queryset = Patient.objects.all()    
     serializer_class = PatientSerializer
@@ -84,51 +85,73 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
     serializer_class = DoctorSerializer
     permission_classes=[]
     # permission_classes=[permission.CreateAction |(IsAuthenticated & (permission.IsAdmin |permission.IsOwner))]
-    parser_classes=[MultiPartParser,FormParser]
+    
     def get_permissions(self):
 
         setattr(self.request,'action',self.action)
         return super().get_permissions()
     
-    # def create(self, request, *args, **kwargs):
+    def perform_create(self, serializer):
+        instance=serializer.save()
+        return instance
+    
+    @atomic
+    def create(self, request, *args, **kwargs):
         
-    #     request.data._mutable=True
-        
-        
-    #     data=match_data(request,self.serializer_class(),['notarized_images'],'full_name')
-    #     print(data.get('departments'))
-    #     return JsonResponse({'fs':'ds'})
-        # doctor_id=Doctor.generate_doctor_id()
-        # data['doctor_id']=doctor_id
-      
-        # surname,firstname=split_name(data['base_user'].pop('full_name'))
+        data=request.data
 
-        # data['base_user']['surname']=surname
-        # data['base_user']['firstname']=firstname
+        doctor_id=Doctor.generate_doctor_id()
+        data['doctor_id']=doctor_id
+      
+        surname,firstname=split_name(data['base_user'].pop('full_name'))
+
+        data['base_user']['surname']=surname
+        data['base_user']['firstname']=firstname
         
-        # list_notarized_image,list_name=set_name_file(data,'notarized_images')
-        # serializer = self.get_serializer(data=data)
+        if data.__contains__('departments'):
+            departments=data.pop('departments') # remove from serializer
+        else:
+            departments=[]
+
+        serializer = self.get_serializer(data=data)
         
-        # check,dict_error=is_valid(serializer,'400')
+        check,dict_error=is_valid(serializer,'400')
         
-        # if not check:
-        #     return JsonResponse({**dict_error,**dict_error})
-        # for index,image in enumerate(list_notarized_image):
-        #     save_file(list_name[index],image)
-        
-        # self.perform_create(serializer)
-        # headers = self.get_success_headers(serializer.data)
-        # data=serializer.data
-        # extra_data={'flag':True,'status':201}
+        if not check:
+            return JsonResponse({**dict_error,**dict_error})
         
         
-        # return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
+        intance=self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        
+
+        
+        for department in departments:
+            if department['de_id']=='0':
+                de=HospitalDepartment.objects.create(
+                    name=department['name']
+                )
+                intance.departments.add(de)
+            else:
+                try:
+                    de=HospitalDepartment.objects.get(de_id=department['de_id'])
+                    intance.departments.add(de)
+                except:
+                    pass
+        
+        data=DoctorSerializer(intance).data
+        extra_data={'flag':True,'status':201}
+        
+        
+        return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(methods=['post'],detail=False,url_path='upload-notarized-doctor-images')
     def upload_notarized_image(self,request):
         try:
+            print(request.data)
             list_notarized_image,list_name=set_name_file(request.data,'images')
             urls=[]
+        
             for index,image in enumerate(list_notarized_image):
                 name=list_name[index]
                 save_file(name,image)

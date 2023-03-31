@@ -1,0 +1,4 @@
+db 
+
+khoa bác sỹ 
+số 0 là chưa có khoa trong db , điền id =0 để t tạo khoa

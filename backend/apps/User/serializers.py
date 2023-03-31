@@ -99,30 +99,28 @@ class DoctorSerializer(serializers.ModelSerializer):
     
     notarized_images=serializers.ListField(child=serializers.CharField())
     base_user = BaseUserSerializer()
-    departments=HospitalDepartmentSerializer(many=True)
+    departments=HospitalDepartmentSerializer(many=True,read_only=True)
     
 
     def get_is_approved(self,instance):
         return str(instance.is_approved)
    
-    # @atomic
-    # def create(self, validated_data):
-    #     list_image=validated_data.pop('notarized_images')
-
-    #     base_user_data = validated_data.pop('base_user')
-    #     instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
-    #     instance_base_user.set_password(instance_base_user.password)
-    #     instance_base_user.save()
-    #     instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
-    #     notarized_images=[]
+    @atomic
+    def create(self, validated_data):
+        urls=validated_data.pop('notarized_images')
+       
+        base_user_data = validated_data.pop('base_user')
+        instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
+        instance_base_user.set_password(instance_base_user.password)
+        instance_base_user.save()
         
-    #     for image  in list_image: 
-
-    #         url=process_image(instance,image,'images/notarized_image')
-    #         notarized_images.append(url)
-    #     instance.notarized_images=notarized_images                 
-
-    #     return instance
+        instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
+        images=Image.objects.filter(url__in=urls)
+        for img in images:
+            instance.base_user.images.add(img)
+        
+       
+        return instance
     
 
     

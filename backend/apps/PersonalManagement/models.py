@@ -10,13 +10,15 @@ class HospitalDepartment(models.Model):
     class Meta:
         db_table="HospitalDepartment"
 
-    de_id=models.CharField(primary_key=True,max_length=8)
+    de_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
     name=models.CharField(null=False,max_length=255)
     doctors=models.ManyToManyField(Doctor,through='DoctorDepartment',related_name='departments')
 
+    def __str__(self) -> str:
+        return self.name
 
 class DoctorDepartment(models.Model):
-    do_de_id=models.CharField(primary_key=True,max_length=16)
+    do_de_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
     de=models.ForeignKey(HospitalDepartment,on_delete=models.CASCADE,null=False)
     doctor=models.ForeignKey(Doctor,on_delete=models.CASCADE,null=False)
     
@@ -27,8 +29,8 @@ class Image(models.Model):
     class Meta:
         db_table="Image"
     
-    image_id=models.CharField(primary_key=True,max_length=8,default=uuid.uuid4)
-    name=models.CharField(max_length=20,null=True)
+    image_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
+    name=models.CharField(max_length=20,null=True,unique=True)
     url=models.TextField(null=True)
     base_user=models.ForeignKey(BaseUser,on_delete=models.CASCADE,null=True,related_name='images')
     image_type=models.IntegerField(max_length=60,choices=ImageEnum.__tupple__(),null=True)
