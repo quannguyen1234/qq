@@ -145,21 +145,7 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
         
         return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
 
-    @action(methods=['post'],detail=False,url_path='upload-notarized-doctor-images')
-    def upload_notarized_image(self,request):
-        try:
-            print(request.data)
-            list_notarized_image,list_name=set_name_file(request.data,'images')
-            urls=[]
-        
-            for index,image in enumerate(list_notarized_image):
-                name=list_name[index]
-                save_file(name,image)
-                url=upload_image(name,'images/notarized_image',ImageEnum.DoctorNotarizedImage.value)
-                urls.append(url)
-            return JsonResponse({'status':200,'flag':True,'urls':urls})
-        except:
-            return JsonResponse({'status':409,'flag':False})
+    
 
     @action(methods=['post'],detail=True,url_path='active')
     def approve_doctor(self,request,pk=None):

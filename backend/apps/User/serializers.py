@@ -25,6 +25,8 @@ class BaseUserSerializer(serializers.ModelSerializer):
     birth_day=serializers.DateField(input_formats=['%m-%d-%Y'])
     full_name=serializers.SerializerMethodField()
     is_active=serializers.SerializerMethodField()
+  
+    
     
     def get_is_active(self,instance):
         return instance.is_active
@@ -91,38 +93,65 @@ class HospitalDepartmentSerializer(serializers.ModelSerializer):
 #     def to_representation(self, value):
 #         return 
 
+class AvatarSerializer(serializers.CharField):
+    def to_internal_value(self, data):
+        return str(data)
+    
 
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
-        fields = ['doctor_id','degree','current_job','base_user','notarized_images','departments']
+        fields = ['doctor_id','degree','current_job','base_user','notarized_images','departments','avatar']
     
     notarized_images=serializers.ListField(child=serializers.CharField())
+    avatar=serializers.CharField(source='base_user.avatar',required=False)
     base_user = BaseUserSerializer()
     departments=HospitalDepartmentSerializer(many=True,read_only=True)
     
-
+    
     def get_is_approved(self,instance):
         return str(instance.is_approved)
-   
+    
+ 
     @atomic
     def create(self, validated_data):
-        urls=validated_data.pop('notarized_images')
+        notarized_images=validated_data.pop('notarized_images')
+        
+        base_user_data = {**validated_data.pop('base_user')}
+        if base_user_data.__contains__('avatar'):
+            url_avatar=base_user_data.pop('avatar')
+        else:
+            url_avatar=None 
        
-        base_user_data = validated_data.pop('base_user')
         instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
         instance_base_user.set_password(instance_base_user.password)
         instance_base_user.save()
         
         instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
-        images=Image.objects.filter(url__in=urls)
-        for img in images:
-            instance.base_user.images.add(img)
-        
        
+        for url in notarized_images:
+            img_instance=update_image(url,{
+                'image_type':ImageEnum.DoctorNotarizedImage.value,
+                'base_user':instance.base_user,
+            })
+            instance.base_user.images.add(img_instance)
+
+        if url_avatar is not None:
+            img_instance=update_image(url_avatar,{
+                'image_type':ImageEnum.Avatar.value,
+                'base_user':instance.base_user,
+            })
+            instance.base_user.images.add(img_instance)
         return instance
     
 
-    
+def update_image(url,value_update):
+    img_instance=Image.objects.get(url=url)
+    for key,value in value_update.items():
+        if hasattr(img_instance,key):
+            setattr(img_instance,key,value)
+    img_instance.save()
+    return img_instance
+
     
   

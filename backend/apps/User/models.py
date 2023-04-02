@@ -10,7 +10,7 @@ from .references import USER_TYPE
 from .references import GENDER
 from .functions import generate_id
 import datetime
-
+from core.references import ImageEnum
 class BaseUserManager(BaseUserManager):
     def create_user(self,phone_number, email, firstname, password=None):
         """
@@ -78,14 +78,17 @@ class BaseUser(MyUserManager,PermissionsMixin,AbstractBaseUser):
     user_type=models.SmallIntegerField(choices=USER_TYPE,null=True)
     birth_day=models.DateField(null=True)
     created=models.DateField(auto_now=True)
-    avatar=models.CharField(null=True,max_length=128)
-
+  
+    
 
     objects = BaseUserManager()
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['phone_number','firstname']
     
+
+    
+        
     def clean(self):        
         if regex.match("^.+@.+\..+$",self.email) is  None:
             raise ValidationError("Email is not valid ",code="error_email_not_valid")
@@ -97,7 +100,14 @@ class BaseUser(MyUserManager,PermissionsMixin,AbstractBaseUser):
             return self.surname +" "+self.firstname
         except:
             return ""
-            
+        
+    @property
+    def avatar(self):
+        try:
+            return self.images.filter(image_type=ImageEnum.Avatar.value).values_list('url', flat=True)[0]
+        except:
+            return None  
+             
     def save(self,*args,**kwagrs):
 
         if self.surname is not None:
@@ -148,7 +158,9 @@ class Doctor(models.Model):
         
     def get_id(self):
         return self.doctor_id
-
+    
+ 
+    
     @staticmethod
     def generate_doctor_id():
         id=generate_id(10)
@@ -158,8 +170,10 @@ class Doctor(models.Model):
 
     @property
     def notarized_images(self):
-        return self.base_user.images.values_list('url', flat=True)
+        return self.base_user.images.filter(image_type=ImageEnum.DoctorNotarizedImage.value).values_list('url', flat=True)
     
+    
+
 class Patient(models.Model):
 
     class Meta:

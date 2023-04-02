@@ -6,6 +6,7 @@ from core.config_outsystems.cfg_firebase import storage,firebase_admin
 import os 
 from core.references import ImageEnum
 from apps.PersonalManagement.models import Image
+from abc import ABC,abstractmethod
 class Custom_APIException(APIException):
     status_code = status.HTTP_200_OK
     default_detail = ('You do not have permission to perform this action')
@@ -143,16 +144,11 @@ def process_image(instance,name,url):
     )
     return url
 
-def upload_image(name,group_url,image_type):
+def upload_image(name,group_url):
      
     storage.child("{}/{}".format(group_url,name)).put("media/"+name)
-  
-    url=storage.child("images/notarized_image/{}".format(name)).get_url(firebase_admin['idToken'])
-    Image.objects.create(
-        url=url,
-        name=name,
-        image_type=image_type
-    )
+    url=storage.child("{}/{}".format(group_url,name)).get_url(firebase_admin['idToken'])
+
     return url
 
 def delete_image(url):
@@ -161,3 +157,53 @@ def delete_image(url):
     except:
         pass
 
+from rest_framework.decorators import api_view,permission_classes
+from django.http import JsonResponse
+
+@api_view(['POST'])
+
+@permission_classes([])
+def upload_image_api(request):
+    try:
+        images,names=set_name_file(request.data,'images')
+
+        urls=[]
+        for index,image in enumerate(images):
+            name=names[index]
+            save_file(name,image)
+            url=upload_image(name,'images')
+            urls.append(url)
+            Image.objects.create(
+                name=name,
+                url=url,
+            )
+                     
+        return JsonResponse({'status':200,'flag':True,'urls':urls})
+    except:
+        return JsonResponse({'status':409,'flag':False})
+       
+
+class ImageProcessing(ABC):
+    
+    def __init__(self,name,url,image_type) -> None:
+        self._name=name
+        self.url=url
+        self.image_type=image_type
+
+
+    @abstractmethod
+    def save_image():
+        pass
+
+
+# class AvatarProcessing(ImageProcessing):
+
+#     def __init__(self, name, url) -> None:
+#         super().__init__(name, url)
+    
+#     def update_image(self):
+#         instance=Image.objects.get(self.url,None)
+#         if instance is not None:
+
+#         else:
+            

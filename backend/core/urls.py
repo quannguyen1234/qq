@@ -16,11 +16,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from rest_framework_simplejwt import views as jwt_views
-
+from .utils import upload_image_api
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("auth/",include('apps.Authentication.urls')),
     path("user/",include('apps.User.urls')),
     path("personal-management/",include('apps.PersonalManagement.urls')),
+    path("upload-image",upload_image_api),
 ]
