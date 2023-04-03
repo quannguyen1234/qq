@@ -1,6 +1,6 @@
 from django.db import models
 from apps.User.models import Doctor,BaseUser
-from core.references import ImageEnum 
+from core.references import ImageEnum,AddressEnum
 import uuid
 # Create your models here.
 
@@ -34,4 +34,13 @@ class Image(models.Model):
     url=models.TextField(null=True)
     base_user=models.ForeignKey(BaseUser,on_delete=models.CASCADE,null=True,related_name='images')
     image_type=models.IntegerField(max_length=60,choices=ImageEnum.__tupple__(),null=True)
+    
+class Address(models.Model):
+    address_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
+    street=models.CharField(max_length=255)
+    village=models.CharField(max_length=30)
+    district=models.CharField(max_length=30)
+    city=models.CharField(max_length=30)
+    base_user=models.ForeignKey(BaseUser,on_delete=models.CASCADE,null=True,related_name='addresses')
+    address_type=models.IntegerField(max_length=60,choices=AddressEnum.__tupple__(),null=True)
     

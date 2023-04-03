@@ -102,7 +102,7 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
 
         doctor_id=Doctor.generate_doctor_id()
         data['doctor_id']=doctor_id
-      
+
         surname,firstname=split_name(data['base_user'].pop('full_name'))
 
         data['base_user']['surname']=surname
@@ -112,6 +112,8 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
             departments=data.pop('departments') # remove from serializer
         else:
             departments=[]
+
+ 
 
         serializer = self.get_serializer(data=data)
         

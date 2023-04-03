@@ -1,18 +1,20 @@
 from .models import BaseUser,Patient,Doctor
 from apps.PersonalManagement.models import Image,HospitalDepartment
+from apps.PersonalManagement.serializer import AdressSeializer
+from apps.PersonalManagement.models import Address
 from rest_framework import serializers
 from django.db.transaction import atomic
 from django.contrib.auth.password_validation import validate_password as validate_password_defaulf
 from apps.User.references import REVERSE_USER_TYPE
 from abc import ABC
-
+from core.references import AddressEnum
 import uuid,os
 from core.references import ImageEnum
 class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BaseUser
         fields = ['id','phone_number','email','surname','firstname','surname','full_name','password',
-                  'citizen_identification','address','birth_day','is_active'
+                  'citizen_identification','birth_day','is_active','current_address'
                 ]   
         extra_kwargs = {
             'id': {'required':False  },
@@ -25,7 +27,8 @@ class BaseUserSerializer(serializers.ModelSerializer):
     birth_day=serializers.DateField(input_formats=['%m-%d-%Y'])
     full_name=serializers.SerializerMethodField()
     is_active=serializers.SerializerMethodField()
-  
+    current_address=AdressSeializer(many=False,required=False)
+    
     
     
     def get_is_active(self,instance):
@@ -101,7 +104,8 @@ class AvatarSerializer(serializers.CharField):
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
-        fields = ['doctor_id','degree','current_job','base_user','notarized_images','departments','avatar']
+        fields = ['doctor_id','degree','current_job','base_user'
+                  ,'notarized_images','departments','avatar']
     
     notarized_images=serializers.ListField(child=serializers.CharField())
     avatar=serializers.CharField(source='base_user.avatar',required=False)
@@ -115,18 +119,32 @@ class DoctorSerializer(serializers.ModelSerializer):
  
     @atomic
     def create(self, validated_data):
-        notarized_images=validated_data.pop('notarized_images')
+       
         
+        notarized_images=validated_data.pop('notarized_images')
         base_user_data = {**validated_data.pop('base_user')}
+    
+        if base_user_data.__contains__('current_address'):
+            current_address=base_user_data.pop('current_address')
+        else:
+            current_address=None
+    
         if base_user_data.__contains__('avatar'):
             url_avatar=base_user_data.pop('avatar')
         else:
             url_avatar=None 
        
+        # create base user
         instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
         instance_base_user.set_password(instance_base_user.password)
         instance_base_user.save()
         
+        #create address
+        if current_address is not None:
+            Address.objects.create(**current_address,base_user=instance_base_user,
+                                   address_type=AddressEnum.CurrentAddress.value
+            )
+
         instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
        
         for url in notarized_images:

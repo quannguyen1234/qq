@@ -10,7 +10,7 @@ from .references import USER_TYPE
 from .references import GENDER
 from .functions import generate_id
 import datetime
-from core.references import ImageEnum
+from core.references import ImageEnum,AddressEnum
 class BaseUserManager(BaseUserManager):
     def create_user(self,phone_number, email, firstname, password=None):
         """
@@ -72,7 +72,6 @@ class BaseUser(MyUserManager,PermissionsMixin,AbstractBaseUser):
     citizen_identification=models.CharField(max_length=12,unique=True,null=True)
     surname=models.CharField(max_length=30,null=True,default="",blank=True)
     firstname=models.CharField(max_length=20,null=True,default="",blank=True)
-    address=models.CharField(max_length=255,null=True)
     gender=models.BooleanField(choices=GENDER,null=True)
     is_active = models.BooleanField(default=True)
     user_type=models.SmallIntegerField(choices=USER_TYPE,null=True)
@@ -100,7 +99,13 @@ class BaseUser(MyUserManager,PermissionsMixin,AbstractBaseUser):
             return self.surname +" "+self.firstname
         except:
             return ""
-        
+    
+    @property
+    def current_address(self):
+        try:
+            return self.addresses.filter(address_type=AddressEnum.CurrentAddress.value)[0]
+        except:
+            return None
     @property
     def avatar(self):
         try:
