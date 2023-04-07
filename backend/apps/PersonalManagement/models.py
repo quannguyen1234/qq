@@ -41,6 +41,8 @@ class Address(models.Model):
     village=models.CharField(max_length=30)
     district=models.CharField(max_length=30)
     city=models.CharField(max_length=30)
+    date=models.DateTimeField(auto_now=True)
     base_user=models.ForeignKey(BaseUser,on_delete=models.CASCADE,null=True,related_name='addresses')
     address_type=models.IntegerField(max_length=60,choices=AddressEnum.__tupple__(),null=True)
+    is_receive=models.BooleanField(default=False)
     
