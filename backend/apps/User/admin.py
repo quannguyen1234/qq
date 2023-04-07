@@ -80,7 +80,7 @@ class UserAdmin(BaseUserAdmin):
             'classes': ('wide',),
             'fields': ('id','phone_number','password1', 'password2','email', 
                         'user_type','surname',
-                        'firstname','address','gender'),
+                        'firstname','gender'),
             
         }),
     )
