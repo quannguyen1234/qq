@@ -42,7 +42,11 @@ class Address(models.Model):
     district=models.CharField(max_length=30)
     city=models.CharField(max_length=30)
     date=models.DateTimeField(auto_now=True)
-    base_user=models.ForeignKey(BaseUser,on_delete=models.CASCADE,null=True,related_name='addresses')
+    base_user=models.ForeignKey(BaseUser,on_delete=models.CASCADE,null=True,related_name='addresses',
+                                related_query_name='address'
+                                )
     address_type=models.IntegerField(max_length=60,choices=AddressEnum.__tupple__(),null=True)
-    is_receive=models.BooleanField(default=False)
     
+    @property
+    def full_address(self):
+        return f"{self.street},{self.village},{self.district},{self.city}"

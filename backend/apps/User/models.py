@@ -154,7 +154,7 @@ class Doctor(models.Model):
     current_job=models.TextField(null=False,default="")
     expreience=models.TextField(null=False,default="")
     base_user=models.OneToOneField(BaseUser,related_name="user_doctor",on_delete=models.CASCADE)
-
+    is_receive=models.BooleanField(default=False)
     def __str__(self) -> str:
         try:
             return f"{self.doctor_id}-{self.base_user.get_full_name}"  

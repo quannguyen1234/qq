@@ -7,6 +7,14 @@ class IsPatient(BasePermission):
         if request.user.user_type==REVERSE_USER_TYPE['Patient']:
             return True
         return False
+    
+
+class IsDoctor(BasePermission):
+
+    def has_permission(self, request, view):
+        if request.user.user_type==REVERSE_USER_TYPE['Doctor']:
+            return True
+        return False
           
 class IsAdmin(BasePermission):
 
