@@ -117,7 +117,7 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
 
         serializer = self.get_serializer(data=data)
         
-        check,dict_error=is_valid(serializer,'400')
+        check,dict_error=is_valid(serializer,400)
         
         if not check:
             return JsonResponse({**dict_error,**dict_error})

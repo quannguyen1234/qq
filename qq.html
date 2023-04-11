@@ -7,11 +7,15 @@
     <title>Document</title>
 </head>
 <body>
-    <form action="http://127.0.0.1:8000/auth/token" method="post">
-        <input type="text" action method="post">
-        
-        <button type="submit"></button>
-    </form>
+   <div >
+        <button type="submit" onclick="connect_socket()">submit</button>
+   </div>
     
 </body>
+<script>
+    function connect_socket(){
+        console.log(window.location.host)
+        const chatSocket = new WebSocket("ws://127.0.0.1:8000/booking/test");
+    }
+</script>
 </html>

@@ -43,7 +43,7 @@ def is_valid(serializer,status):
     except Exception as e:
         
         dict_error=e.__dict__['detail']
-        dict_error['flag']='false'
+        dict_error['flag']=False
         dict_error['status']=status
         return False, dict_error
     return True,{}

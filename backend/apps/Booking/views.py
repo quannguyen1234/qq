@@ -79,3 +79,8 @@ class DoctorAppointmentsAPI(GenericViewSet):
                 'status':409,
                 'flag':False
             })
+        
+def receive_order(base_user,data):
+    address=data.get('address')
+    Address.objects.filter(base_user__email=base_user.email,address_type=AddressEnum.CurrentAddress.value).delete()
+    Address.objects.create(**address,base_user=base_user,address_type=AddressEnum.CurrentAddress.value)
