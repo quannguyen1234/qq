@@ -17,6 +17,8 @@ class HospitalDepartment(models.Model):
     def __str__(self) -> str:
         return self.name
 
+
+        
 class DoctorDepartment(models.Model):
     do_de_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
     de=models.ForeignKey(HospitalDepartment,on_delete=models.CASCADE,null=False)
