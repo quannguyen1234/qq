@@ -1,5 +1,5 @@
 from .models import BaseUser,Patient,Doctor
-from apps.PersonalManagement.models import Image,HospitalDepartment
+from apps.PersonalManagement.models import ImageUser,HospitalDepartment
 from apps.PersonalManagement.serializer import AdressSeializer
 from apps.PersonalManagement.models import Address
 from rest_framework import serializers
@@ -8,6 +8,7 @@ from django.contrib.auth.password_validation import validate_password as validat
 from apps.User.references import REVERSE_USER_TYPE
 from abc import ABC
 from core.references import AddressEnum
+from core.utils import update_image
 import uuid,os
 from core.references import ImageEnum
 class BaseUserSerializer(serializers.ModelSerializer):
@@ -105,9 +106,10 @@ class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
         fields = ['doctor_id','degree','current_job','base_user'
-                  ,'notarized_images','departments','avatar']
+                  ,'notarized_images','departments','avatar','name_images']
     
     notarized_images=serializers.ListField(child=serializers.CharField())
+    name_images=serializers.JSONField(write_only=True)
     avatar=serializers.CharField(source='base_user.avatar',required=False)
     base_user = BaseUserSerializer()
     departments=HospitalDepartmentSerializer(many=True,read_only=True)
@@ -122,7 +124,8 @@ class DoctorSerializer(serializers.ModelSerializer):
        
         
         notarized_images=validated_data.pop('notarized_images')
-        base_user_data = {**validated_data.pop('base_user')}
+        name_images=validated_data.pop('name_images')
+        base_user_data = {**validated_data.pop('base_user')} 
     
         if base_user_data.__contains__('current_address'):
             current_address=base_user_data.pop('current_address')
@@ -133,7 +136,7 @@ class DoctorSerializer(serializers.ModelSerializer):
             url_avatar=base_user_data.pop('avatar')
         else:
             url_avatar=None 
-       
+
         # create base user
         instance_base_user=BaseUser.objects.create(**base_user_data,user_type=REVERSE_USER_TYPE['Doctor'],is_active=False)
         instance_base_user.set_password(instance_base_user.password)
@@ -147,29 +150,26 @@ class DoctorSerializer(serializers.ModelSerializer):
 
         instance=Doctor.objects.create(**validated_data,base_user=instance_base_user)
        
-        for url in notarized_images:
-            img_instance=update_image(url,{
-                'image_type':ImageEnum.DoctorNotarizedImage.value,
-                'base_user':instance.base_user,
-            })
+        for index,url in enumerate(notarized_images):
+            img_instance=ImageUser.objects.create(
+               name=name_images['notarized_images'][index],
+               url=url,
+               image_type=ImageEnum.DoctorNotarizedImage.value
+            )
             instance.base_user.images.add(img_instance)
 
         if url_avatar is not None:
-            img_instance=update_image(url_avatar,{
-                'image_type':ImageEnum.Avatar.value,
-                'base_user':instance.base_user,
-            })
+            img_instance=ImageUser.objects.create(
+               name=name_images['avatar'],
+               url=url,
+               image_type=ImageEnum.Avatar.value
+            )
+            
             instance.base_user.images.add(img_instance)
         return instance
     
 
-def update_image(url,value_update):
-    img_instance=Image.objects.get(url=url)
-    for key,value in value_update.items():
-        if hasattr(img_instance,key):
-            setattr(img_instance,key,value)
-    img_instance.save()
-    return img_instance
+
 
     
   

@@ -3,7 +3,8 @@ from enum import Enum
 class ImageEnum(Enum):
 
     DoctorNotarizedImage = 1    
-    Avatar =2
+    Avatar = 2
+    DepartmentImage = 3
 
     @classmethod
     def __tupple__(cls):

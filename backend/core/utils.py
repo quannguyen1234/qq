@@ -5,7 +5,7 @@ from django.core.files.storage import default_storage
 from core.config_outsystems.cfg_firebase import storage,firebase_admin
 import os 
 from core.references import ImageEnum
-from apps.PersonalManagement.models import Image
+from apps.PersonalManagement.models import ImageUser
 from abc import ABC,abstractmethod
 class Custom_APIException(APIException):
     status_code = status.HTTP_200_OK
@@ -119,7 +119,7 @@ def set_name_file(data,field_name):
 def process_image(instance,name,url):
     
     # check exist image
-    list_old_image=Image.objects.filter(
+    list_old_image=ImageUser.objects.filter(
         base_user__user_doctor=instance,
         image_type=ImageEnum.DoctorNotarizedImage.value
     )
@@ -136,7 +136,7 @@ def process_image(instance,name,url):
         os.remove("media/"+name)
 
     url=storage.child("images/notarized_image/{}".format(name)).get_url(firebase_admin['idToken'])
-    Image.objects.create(
+    ImageUser.objects.create(
         url=url,
         name=name,
         base_user=instance.base_user,
@@ -145,7 +145,7 @@ def process_image(instance,name,url):
     return url
 
 def upload_image(name,group_url):
-     
+    
     storage.child("{}/{}".format(group_url,name)).put("media/"+name)
     url=storage.child("{}/{}".format(group_url,name)).get_url(firebase_admin['idToken'])
 
@@ -161,24 +161,20 @@ from rest_framework.decorators import api_view,permission_classes
 from django.http import JsonResponse
 
 @api_view(['POST'])
-
 @permission_classes([])
 def upload_image_api(request):
     try:
         images,names=set_name_file(request.data,'images')
 
         urls=[]
+        print(images)
         for index,image in enumerate(images):
             name=names[index]
             save_file(name,image)
             url=upload_image(name,'images')
             urls.append(url)
-            Image.objects.create(
-                name=name,
-                url=url,
-            )
                      
-        return JsonResponse({'status':200,'flag':True,'urls':urls})
+        return JsonResponse({'status':200,'flag':True,'urls':urls,'names':names})
     except:
         return JsonResponse({'status':409,'flag':False})
        
@@ -196,14 +192,15 @@ class ImageProcessing(ABC):
         pass
 
 
-# class AvatarProcessing(ImageProcessing):
 
-#     def __init__(self, name, url) -> None:
-#         super().__init__(name, url)
-    
-#     def update_image(self):
-#         instance=Image.objects.get(self.url,None)
-#         if instance is not None:
-
-#         else:
             
+
+def update_image(url,value_update,cls):
+    img_instance=cls.objects.get(url=url)
+    for key,value in value_update.items():
+        if hasattr(img_instance,key):
+            setattr(img_instance,key,value)
+    img_instance.save()
+    return img_instance
+
+

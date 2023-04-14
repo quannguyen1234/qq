@@ -27,13 +27,28 @@ class DoctorDepartment(models.Model):
 class Image(models.Model):
     
     class Meta:
-        db_table="Image"
-    
+        abstract=True
+
     image_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
     name=models.CharField(max_length=255,null=True,unique=True)
     url=models.TextField(null=True)
-    base_user=models.ForeignKey(BaseUser,on_delete=models.CASCADE,null=True,related_name='images')
     image_type=models.IntegerField(max_length=60,choices=ImageEnum.__tupple__(),null=True)
+
+class ImageUser(Image):
+    
+    class Meta:
+        db_table="ImageUser"
+    
+    base_user=models.ForeignKey(BaseUser,on_delete=models.CASCADE,null=True,related_name='images')
+
+
+class ImageDepartment(Image):
+    
+    class Meta:
+        db_table="ImageDepartment"
+    
+    department=models.ForeignKey(HospitalDepartment,on_delete=models.CASCADE,null=True,related_name='images')
+   
     
 class Address(models.Model):
     address_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
