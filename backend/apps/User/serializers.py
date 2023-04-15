@@ -122,7 +122,7 @@ class DoctorSerializer(serializers.ModelSerializer):
     @atomic
     def create(self, validated_data):
        
-        
+    
         notarized_images=validated_data.pop('notarized_images')
         name_images=validated_data.pop('name_images')
         base_user_data = {**validated_data.pop('base_user')} 
@@ -168,6 +168,32 @@ class DoctorSerializer(serializers.ModelSerializer):
             instance.base_user.images.add(img_instance)
         return instance
     
+    @atomic
+    def update(self, instance, validated_data):
+
+        if validated_data.__contains__('name_images'):
+            instance.base_user.images.all().delete()
+            name_images=validated_data.pop('name_images')
+            for key,value in name_images.items():
+                
+                if validated_data.__contains__(key) or validated_data['base_user'].__contains__('avatar'):
+        
+                    if key=='avatar': # avatar is base user's property
+                        url=validated_data['base_user'].pop('avatar')
+                        name=name_images['avatar']
+                        create_user_image(name,url,instance,ImageEnum.Avatar.value)
+                        
+                    elif key=='notarized_images':
+                        urls=validated_data.pop('notarized_images')
+                        for index,name in enumerate(name_images['notarized_images']):    
+                            create_user_image(name,urls[index],instance,ImageEnum.DoctorNotarizedImage.value)
+        
+        return instance
+
+def create_user_image(name,url,instance,type):
+    img=ImageUser.objects.create(url=url,name=name,image_type=type)
+    instance.base_user.images.add(img)
+
 
 
 
