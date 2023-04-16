@@ -11,6 +11,7 @@ from core.references import AddressEnum
 from core.utils import update_image
 import uuid,os
 from core.references import ImageEnum
+
 class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BaseUser
@@ -182,12 +183,19 @@ class DoctorSerializer(serializers.ModelSerializer):
                         url=validated_data['base_user'].pop('avatar')
                         name=name_images['avatar']
                         create_user_image(name,url,instance,ImageEnum.Avatar.value)
-                        
+                    
                     elif key=='notarized_images':
                         urls=validated_data.pop('notarized_images')
                         for index,name in enumerate(name_images['notarized_images']):    
                             create_user_image(name,urls[index],instance,ImageEnum.DoctorNotarizedImage.value)
         
+        if validated_data.__contains__('base_user'):
+            base_user_data=validated_data.pop('base_user')
+            base_user=instance.base_user
+            base_user_serialize=BaseUserSerializer(instance=base_user)
+            base_user_serialize.update(base_user,dict(base_user_data))
+       
+
         return instance
 
 def create_user_image(name,url,instance,type):

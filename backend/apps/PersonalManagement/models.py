@@ -2,6 +2,10 @@ from django.db import models
 from apps.User.models import Doctor,BaseUser
 from core.references import ImageEnum,AddressEnum
 import uuid
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+from core.utils import delete_image as delete_image_firebase
+
 # Create your models here.
 
 
@@ -36,6 +40,8 @@ class Image(models.Model):
     url=models.TextField(null=True)
     image_type=models.IntegerField(max_length=60,choices=ImageEnum.__tupple__(),null=True)
 
+
+
 class ImageUser(Image):
     
     class Meta:
@@ -51,7 +57,17 @@ class ImageDepartment(Image):
     
     department=models.ForeignKey(HospitalDepartment,on_delete=models.CASCADE,null=True,related_name='images')
    
-    
+
+@receiver(pre_delete, sender=ImageUser)
+@receiver(pre_delete, sender=ImageDepartment)
+def delete_image(sender, instance, **kwargs):
+    print("Hello from ImageUser or ImageDepartment!")
+    try:
+        if instance.name is not None:
+            delete_image_firebase(instance.name)
+    except:
+        pass
+
 class Address(models.Model):
     address_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
     street=models.CharField(max_length=255)

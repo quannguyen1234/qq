@@ -13,7 +13,7 @@ from .serializers import PatientSerializer,DoctorSerializer
 from . import permission
 from core.references import ImageEnum
 from core.utils import( Custom_CheckPermisson,
- split_name,is_valid,process_image,save_file,set_name_file,upload_image
+ split_name,is_valid,save_file,set_name_file,upload_image
 )
 from apps.User.serializers import BaseUserSerializer
 from django.contrib.auth.password_validation import validate_password
@@ -95,6 +95,10 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
         instance=serializer.save()
         return instance
     
+    def perform_update(self, serializer):
+        instance=serializer.save()
+        return instance
+
     @atomic
     def create(self, request, *args, **kwargs):
         
@@ -147,18 +151,29 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
         
         return response.Response({**data,**extra_data}, status=status.HTTP_201_CREATED, headers=headers)
 
+    @atomic
     def update(self, request, *args, **kwargs):
-        # print(kwargs.pop('partial'))
+        
+        if request.data['base_user'].__contains__('full_name'):
+       
+            surname,firstname=split_name(request.data['base_user'].pop('full_name'))
+            request.data['base_user']['surname']=surname
+            request.data['base_user']['firstname']=firstname
+     
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        intance=self.perform_update(serializer)
+
+        check,dict_error=is_valid(serializer,400)
+        if not check:
+            return JsonResponse({**dict_error,**dict_error})
+        instance=self.perform_update(serializer)
+
 
 
         if request.data.__contains__('departments'):
             
-            instance.departments.all().delete()
+            DoctorDepartment.objects.filter(doctor=instance).delete()
             departments=request.data.pop('departments')
             for de  in departments:
                 if de['de_id']=='0':
@@ -173,8 +188,17 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
             # If 'prefetch_related' has been applied to a queryset, we need to
             # forcibly invalidate the prefetch cache on the instance.
             instance._prefetched_objects_cache = {}
-        return response.Response(serializer.data)        
+        data=serializer.data
+        data.update({'flag':True,'status':200})
+        return response.Response(data)
 
+    @atomic
+    def destroy(self, request, *args, **kwargs):
+        instance=self.get_object()
+        instance.base_user.delete()
+        return JsonResponse({'d':'d'})
+        # return super().destroy(request, *args, **kwargs)
+    
     @action(methods=['post'],detail=True,url_path='active')
     def approve_doctor(self,request,pk=None):
         try:
@@ -189,7 +213,7 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
         instance=self.get_object()
         instance.base_user.inactive_user()
         return JsonResponse({'message':'Inactive Successfully','status':201,'flag':True})
-    
+
 
 
 

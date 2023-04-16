@@ -1,7 +1,8 @@
 from .models import HospitalDepartment,Address,ImageDepartment
 from rest_framework import serializers
 from django.db.transaction import atomic
-from core.utils import update_image,ImageEnum
+from core.utils import update_image
+from core.references import ImageEnum
 
 class DepartmentImageField(serializers.ListField):
     child=serializers.CharField()
@@ -37,9 +38,7 @@ class HospitalDepartmentSerializer(serializers.ModelSerializer):
     def get_image_names(self,instance):
         return []
     
-    # def get_images(self,instance):
-    #     return []
-    
+   
     @atomic
     def create(self, validated_data):
         
@@ -49,7 +48,7 @@ class HospitalDepartmentSerializer(serializers.ModelSerializer):
             image_names=validated_data.pop('image_names')
         else:
             images=[]
-        print(validated_data)
+        
         
         hospital_instance=HospitalDepartment.objects.create(
                **validated_data
@@ -66,6 +65,10 @@ class HospitalDepartmentSerializer(serializers.ModelSerializer):
         
         return hospital_instance
 
+    # @atomic 
+    # def update(self, instance, validated_data):
+
+        # return super().update(instance, validated_data)
 class AdressSeializer(serializers.ModelSerializer):
 
     class Meta:

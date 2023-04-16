@@ -3,9 +3,6 @@ from rest_framework import status
 import uuid
 from django.core.files.storage import default_storage
 from core.config_outsystems.cfg_firebase import storage,firebase_admin
-import os 
-from core.references import ImageEnum
-from apps.PersonalManagement.models import ImageUser
 from abc import ABC,abstractmethod
 class Custom_APIException(APIException):
     status_code = status.HTTP_200_OK
@@ -116,33 +113,33 @@ def set_name_file(data,field_name):
 
 
 
-def process_image(instance,name,url):
+# def process_image(instance,name,url):
     
-    # check exist image
-    list_old_image=ImageUser.objects.filter(
-        base_user__user_doctor=instance,
-        image_type=ImageEnum.DoctorNotarizedImage.value
-    )
-    for img in list_old_image:
-        try:
-            storage.delete("{}/{}".format(url,img.name),firebase_admin['idToken']) 
-        except:
-            pass
+#     # check exist image
+#     list_old_image=ImageUser.objects.filter(
+#         base_user__user_doctor=instance,
+#         image_type=ImageEnum.DoctorNotarizedImage.value
+#     )
+#     for img in list_old_image:
+#         try:
+#             storage.delete("{}/{}".format(url,img.name),firebase_admin['idToken']) 
+#         except:
+#             pass
  
     
-    storage.child("{}/{}".format(url,name)).put("media/"+name)
+#     storage.child("{}/{}".format(url,name)).put("media/"+name)
     
-    if os.path.exists("media/"+name):
-        os.remove("media/"+name)
+#     if os.path.exists("media/"+name):
+#         os.remove("media/"+name)
 
-    url=storage.child("images/notarized_image/{}".format(name)).get_url(firebase_admin['idToken'])
-    ImageUser.objects.create(
-        url=url,
-        name=name,
-        base_user=instance.base_user,
-        image_type=ImageEnum.DoctorNotarizedImage.value
-    )
-    return url
+#     url=storage.child("images/notarized_image/{}".format(name)).get_url(firebase_admin['idToken'])
+#     ImageUser.objects.create(
+#         url=url,
+#         name=name,
+#         base_user=instance.base_user,
+#         image_type=ImageEnum.DoctorNotarizedImage.value
+#     )
+#     return url
 
 def upload_image(name,group_url):
     
@@ -151,9 +148,9 @@ def upload_image(name,group_url):
 
     return url
 
-def delete_image(url):
+def delete_image(name):
     try:
-        storage.delete("{}/{}".format(url),firebase_admin['idToken']) 
+        storage.delete("{}/{}".format(name),firebase_admin['idToken']) 
     except:
         pass
 
