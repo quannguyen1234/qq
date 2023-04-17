@@ -98,6 +98,20 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
     def perform_update(self, serializer):
         instance=serializer.save()
         return instance
+    
+    @action(methods=['GET'],detail=False,url_path='get-doctor')
+    def get_doctor_approved(self,request):
+        
+        approved=request.query_params['approved']
+        
+        if approved=='0':
+            doctors=self.serializer_class(Doctor.objects.filter(base_user__is_active=True),many=True)
+            print(doctors)
+        else:
+            doctors=self.serializer_class(Doctor.objects.filter(base_user__is_active=False),many=True)
+        
+        return JsonResponse({'data':doctors.data,'status':200,'flag':True})
+       
 
     @atomic
     def create(self, request, *args, **kwargs):
