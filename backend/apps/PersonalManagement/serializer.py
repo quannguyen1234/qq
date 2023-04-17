@@ -35,8 +35,7 @@ class HospitalDepartmentSerializer(serializers.ModelSerializer):
         print(instance)
         return list(instance.images.values_list('url',flat=True))
     
-    def get_image_names(self,instance):
-        return []
+  
     
    
     @atomic
@@ -65,10 +64,23 @@ class HospitalDepartmentSerializer(serializers.ModelSerializer):
         
         return hospital_instance
 
-    # @atomic 
-    # def update(self, instance, validated_data):
+    @atomic
+    def update(self, instance, validated_data):
 
-        # return super().update(instance, validated_data)
+        if validated_data.__contains__('images') and validated_data.__contains__('image_names'):
+            instance.images.all().delete()
+            images=validated_data.pop('images')
+            image_names=validated_data.pop('image_names')
+            for index,url in enumerate(images):
+                image_instance=ImageDepartment.objects.create(
+                    name=image_names[index],
+                    url=url,
+                    image_type=ImageEnum.DepartmentImage.value
+                )
+            instance.images.add(image_instance)
+
+        return super().update(instance, validated_data)
+    
 class AdressSeializer(serializers.ModelSerializer):
 
     class Meta:
