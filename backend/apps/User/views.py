@@ -22,13 +22,28 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
     queryset = Patient.objects.all()    
     serializer_class = PatientSerializer
     permission_classes = [permission.CreateAction | (IsAuthenticated & (permission.IsOwner|permission.IsAdmin))]
-    
+
 
     def get_permissions(self):
         setattr(self.request,'action',self.action)
 
         return super().get_permissions()
     
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            serializer = self.get_serializer(queryset, many=True)
+            
+            return response.Response({'data':serializer.data,'status':200,'flag':True})
+        except:
+            return response.Response({'data':serializer.data,'status':409,'flag':False}) 
+        
     def create(self, request, *args, **kwargs):        
         base_user_data=request.data['base_user']
       
