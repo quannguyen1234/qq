@@ -145,7 +145,7 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
             departments=data.pop('departments') # remove from serializer
         else:
             departments=[]
-
+        
  
 
         serializer = self.get_serializer(data=data)

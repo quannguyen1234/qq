@@ -17,10 +17,11 @@ class HospitalDepartment(models.Model):
     de_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
     name=models.CharField(null=False,max_length=255)
     doctors=models.ManyToManyField(Doctor,through='DoctorDepartment',related_name='departments')
+    description=models.TextField(null=True)
 
     def __str__(self) -> str:
         return self.name
-
+    
 
         
 class DoctorDepartment(models.Model):
