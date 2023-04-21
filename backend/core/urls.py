@@ -23,6 +23,7 @@ urlpatterns = [
     path("auth/",include('apps.Authentication.urls')),
     path("user/",include('apps.User.urls')),
     path("personal-management/",include('apps.PersonalManagement.urls')),
+    path('medical-record-mangament/',include('apps.MedicalRecordManagement.urls')),
     path("booking/",include('apps.Booking.urls')),
     path("upload-image",upload_image_api),
 ]
