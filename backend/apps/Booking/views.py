@@ -28,7 +28,7 @@ class DoctorAppointmentsAPI(GenericViewSet):
     def get_doctors(self,request):
         data=request.data
         address=data.pop('address')
-        department=data.pop('department')
+        department=data.pop('de_id')
         district=address.get('district')
         city=address.get('city')
      
