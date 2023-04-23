@@ -5,7 +5,7 @@ from jwt import decode as jwt_decode
 from django.conf import settings
 from apps.User.models import BaseUser
 from django.contrib.auth.models import AnonymousUser
-import json
+import json,os
 from asgiref.sync import sync_to_async
 
 class TokenAuthMiddleware:
@@ -26,12 +26,15 @@ class TokenAuthMiddleware:
         user=AnonymousUser()
         # Get the token
         headers=scope["headers"]
+    
         
         result = {}
         for item in headers:
             result[item[0].decode()] = item[1].decode()
         # Try to authenticate the user
-        token=result['access']
+        # token=result['access']
+        token=scope['path'].split('/')[-1]
+        print("------",token,"-----")
         try:
             # This will automatically validate the token and raise an error if token is invalid
             UntypedToken(token)

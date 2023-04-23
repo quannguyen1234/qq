@@ -183,7 +183,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             #         "status":200
             #     },
             # }))   
-        print(data)
+        
 
     async def send_message_to_channel(self,channel_name, data):
       

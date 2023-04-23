@@ -66,6 +66,14 @@ class MedicalRecordAPI(ModelViewSet):
             return JsonResponse(message)
         records=patient.records.all()
         data=serializers.MedicalRecordSerializer(records,many=True).data
-        return JsonResponse({'data':data})
-    
+        for index,record in enumerate(records):
+            current_base_user=record.doctor.base_user
+            current_record=data[index]
+            current_record['doctor_name']=current_base_user.get_full_name
+            current_record['current_job']=record.doctor.current_job
+            current_record['departments']=list(record.doctor.departments.all().values_list('name',flat=True))
+        
+            
+        return JsonResponse({'data':data,'flag':True,'status':200})
+
     
