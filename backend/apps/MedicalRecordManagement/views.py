@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from rest_framework.decorators import action
 from apps.User.models import Patient
 from rest_framework.exceptions import ValidationError
+import datetime
 # from rest_framework.permissions import IsAuthenticated
 # class PrescriptionAPI(ModelViewSet):
     # queryset=Pre
@@ -17,23 +18,31 @@ class MedicalRecordAPI(ModelViewSet):
     permission_classes=[]
     serializer_class=serializers.MedicalRecordSerializer
     
-    # @atomic
-    # def create(self, request, *args, **kwargs):
+    @atomic
+    def create(self, request, *args, **kwargs):
+        doctor=request.user.user_doctor
+        data=request.data
+        data['date']=datetime.datetime.now()
+        data['doctor']=doctor.doctor_id
+        # data['patient']=
+        serializer = self.get_serializer(data=data)
+        serializer
         
-    #     serializer = self.get_serializer(data=request.data)
-    #     # serializer.is_valid(raise_exception=True)
-    #     check,dict_error=is_valid(serializer,400)
-
-    #     if not check:
-    #         return JsonResponse({**dict_error,**dict_error})
-    #     self.perform_create(serializer)
-    #     headers = self.get_success_headers(serializer.data)
-    #     data={
-    #         'data':data,
-    #         'flag':True,
-    #         'status':200
-    #     }
-    #     return response.Response(data, status=status.HTTP_201_CREATED, headers=headers)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        # check,dict_error=is_valid(serializer,400)
+        return JsonResponse({'f':'d'})
+        # if not check:
+        #     return JsonResponse({**dict_error,**dict_error})
+        # self.perform_create(serializer)
+        # headers = self.get_success_headers(serializer.data)
+        # data={
+        #     'data':data,
+        #     'flag':True,
+        #     'status':200
+        # }
+        # return response.Response(data, status=status.HTTP_201_CREATED, headers=headers)
+    
     def get_patient(self,patient_id):
         try:
             patient=Patient.objects.get(patient_id=patient_id)

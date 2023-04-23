@@ -220,7 +220,7 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
         data=serializer.data
         data.update({'flag':True,'status':200})
         return response.Response(data)
-
+    
     @atomic
     def destroy(self, request, *args, **kwargs):
         instance=self.get_object()

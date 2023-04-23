@@ -18,7 +18,7 @@ class MedicalRecord(models.Model):
     updated=models.DateTimeField(auto_now_add=True)
     patient=models.ForeignKey(Patient,on_delete=models.CASCADE,related_name='records',null=True)
     doctor=models.ForeignKey(Doctor,on_delete=models.CASCADE,related_name='records',null=True)
-
+    
     def __str__(self):
         try:
             return f"Record of Patient: {self.patient.patient_id}"
@@ -34,8 +34,8 @@ class Prescription(models.Model):
     note=models.TextField(null=True)
     record=models.ForeignKey(MedicalRecord,on_delete=models.CASCADE,null=True,related_name='prescriptions')
 
-    def __str__(self) -> str:
-        return self.medicine_name
+    # def __str__(self) -> str:
+        # return f"{self.medicine_name}-{self.record.record_id}"
 
 
 
