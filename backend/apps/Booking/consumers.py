@@ -44,7 +44,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
         self.base_user=self.scope['user']
         self.user_type=await database_sync_to_async(lambda:self.base_user.user_type)()
         
-
+        
         if ( await database_sync_to_async(lambda:hasattr(self.base_user,'user_doctor'))()
            and await database_sync_to_async(lambda:hasattr(self.base_user,'user_patient'))() ):
             await self.send(json.dumps({

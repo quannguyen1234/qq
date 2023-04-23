@@ -22,7 +22,7 @@ class BaseUserSerializer(serializers.ModelSerializer):
             'id': {'required':False  },
             'firstname' : {'write_only':True},
             'surname' : {'write_only':True},
-            'password' : {'write_only':True},
+            # 'password' : {'write_only':True},
             'is_active':{'read_only':True}
         }
         

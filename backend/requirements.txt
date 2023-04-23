@@ -6,4 +6,5 @@ mysqlclient==2.1.1
 regex==2022.10.31
 Pyrebase4==4.5.0
 django-redis==5.2.0
-channels==4.0.0
+channels==3.0.4 
+channels-redis==4.0.0

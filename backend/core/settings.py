@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.User',
     'apps.Authentication',
     'apps.PersonalManagement',
+    'apps.MedicalRecordManagement',
     'corsheaders',
     'apps.Booking',
     'channels',
