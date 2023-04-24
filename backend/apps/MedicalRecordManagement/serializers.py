@@ -38,7 +38,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         return f"{instance.date.month}-{instance.date.day}-{instance.date.year}"
 
     def create(self, validated_data):
-        print(validated_data)
+      
         patient_id=validated_data.pop('patient')['patient_id']
         patient=Patient.objects.get(patient_id=patient_id)
         doctor=validated_data.pop('doctor')
@@ -54,7 +54,21 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
                 note=pre['note'],
                 record=instance
             )
-            # instance.prescriptions.add(pre_instance)
 
         return instance
+    
+    def update(self, instance, validated_data):
+        prescriptions=[]
+        if validated_data.__contains__('prescriptions'):
+            prescriptions=validated_data.pop('prescriptions')
 
+        super().update(instance=instance,validated_data=validated_data)
+
+        instance.prescriptions.all().delete()
+        for pre in prescriptions:
+            pre_instance=Prescription.objects.create(
+                medicine_name=pre['medicine_name'],
+                note=pre['note'],
+                record=instance
+            )
+        return instance

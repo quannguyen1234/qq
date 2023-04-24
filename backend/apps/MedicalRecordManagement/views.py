@@ -24,25 +24,44 @@ class MedicalRecordAPI(ModelViewSet):
         data=request.data
         data['date']=datetime.datetime.now()
         data['doctor']=doctor.doctor_id
-        # data['patient']=
-        serializer = self.get_serializer(data=data)
-        serializer
         
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        # check,dict_error=is_valid(serializer,400)
-        return JsonResponse({'f':'d'})
-        # if not check:
-        #     return JsonResponse({**dict_error,**dict_error})
-        # self.perform_create(serializer)
-        # headers = self.get_success_headers(serializer.data)
-        # data={
-        #     'data':data,
-        #     'flag':True,
-        #     'status':200
-        # }
-        # return response.Response(data, status=status.HTTP_201_CREATED, headers=headers)
+        serializer = self.get_serializer(data=data)
+
+        check,dict_error=is_valid(serializer,400)
+        if not check:
+            return JsonResponse({**dict_error,**dict_error})
+        
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        data={
+            'data':data,
+            'flag':True,
+            'status':200
+        }
+        return response.Response(data, status=status.HTTP_201_CREATED, headers=headers)
     
+    @atomic
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        check,dict_error=is_valid(serializer,400)
+        if not check:
+            return JsonResponse({**dict_error,**dict_error})
+        
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+        data=serializer.data
+        data['flag']=True
+        data['status']=200
+        return response.Response(data)
+
+
+
     def get_patient(self,patient_id):
         try:
             patient=Patient.objects.get(patient_id=patient_id)
