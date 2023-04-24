@@ -91,6 +91,7 @@ else:
     DB_HOST='localhost'
 print("-------------------------------")
 print(DB_HOST)
+
 if os.getenv('sql_lite')=="0":
 
     DATABASES = {
@@ -160,3 +161,4 @@ from .local_settings import *
 from core.config_outsystems.cfg_firebase import *
 # except:
     # pass
+

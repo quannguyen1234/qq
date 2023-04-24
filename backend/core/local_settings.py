@@ -1,5 +1,6 @@
 from datetime import timedelta
 from . import settings
+import os
 CORS_ALLOW_ALL_ORIGINS=True
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -21,14 +22,28 @@ CACHES = {
     }
 }
 
-CHANNEL_LAYERS = {
+if os.getenv('socket')=="redis":
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [('127.0.0.1', 6379)],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'BACKEND': 'channels_rabbitmq.core.RabbitmqChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            'host': [('localhost', 15672)],
+            
         },
     },
 }
+# from channels_rabbitmq
+
+    
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=300),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
