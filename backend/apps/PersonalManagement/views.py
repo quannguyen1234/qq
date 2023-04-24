@@ -8,7 +8,7 @@ from .serializer import HospitalDepartmentSerializer
 from django.db.transaction import atomic
 class HospitalDepartmentAPI(Custom_CheckPermisson,ModelViewSet):
     serializer_class=HospitalDepartmentSerializer
-    permission_classes=[IsAuthenticated]
+    # permission_classes=[IsAuthenticated]
     queryset=HospitalDepartment.objects.all()
     
 

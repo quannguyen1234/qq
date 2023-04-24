@@ -24,7 +24,7 @@ class DoctorAppointmentsAPI(GenericViewSet):
         setattr(self.request,'action',self.action)
         return super().get_permissions()
     
-    @action(methods=['get'],detail=False,url_path='get-doctors')
+    @action(methods=['post'],detail=False,url_path='get-doctors')
     def get_doctors(self,request):
         data=request.data
         address=data.pop('address')
