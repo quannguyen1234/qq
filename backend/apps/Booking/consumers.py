@@ -88,22 +88,32 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
     
     async def websocket_disconnect(self,*agrs,**kwagrs):
         # if isinstance(self.user,AnonymousUser): 
+        
         if  self.user_type is not  None:
             if self.user_type==REVERSE_USER_TYPE['Doctor']:
                 
                 await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
-                await self.disconnect(code=None)
                 
                 # turn off receving order signal 
                 self.user.is_receive=True
                 await database_sync_to_async(lambda:self.user.save())()
+            
 
             if self.user_type==REVERSE_USER_TYPE['Patient']:
                 
                 await database_sync_to_async(lambda:ConnectDoctor.objects.filter(patient=self.user).delete())()
-                await self.disconnect(code=None)
+        await self.disconnect(code=None)
                 
-
+    async def disconnect(self,code):
+        await self.send(json.dumps({
+                "data": {
+                    "message:":"disconnect",
+                    "flag":True,
+                    "status":200
+                },
+            }))
+        
+        await self.close()
             
 
     async def receive(self, text_data=None, bytes_data=None):
@@ -174,7 +184,8 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                     }               
                 )    
 
-
+        elif data['type']=='disconnect':
+            await self.websocket_disconnect()
             
             # await self.send(json.dumps({
             #     "data": {
