@@ -107,7 +107,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
     async def disconnect(self,code):
         await self.send(json.dumps({
                 "data": {
-                    "message:":"disconnect",
+                    "message":"disconnect",
                     "flag":True,
                     "status":200
                 },
