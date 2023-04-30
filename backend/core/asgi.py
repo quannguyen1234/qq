@@ -17,9 +17,11 @@ from core.my_middleware import TokenAuthMiddleware
 import os
 
 from django.core.asgi import get_asgi_application
+from channels.layers import get_channel_layer
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 django_asgi_app = get_asgi_application()
+
 
 application = ProtocolTypeRouter({
     # Django's ASGI application to handle traditional HTTP requests

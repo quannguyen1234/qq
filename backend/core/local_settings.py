@@ -33,17 +33,18 @@ if os.getenv('socket')=="redis":
     }
 else:
     CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_rabbitmq.core.RabbitmqChannelLayer',
-        'CONFIG': {
-            'host': [('localhost', 15672)],
-            
+    "default": {
+        "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
+        "CONFIG": {
+            "host": "amqp://guest:guest@localhost:5672/",
+           
+            "ssl_context": None
         },
     },
 }
 # from channels_rabbitmq
 
-    
+from channels_rabbitmq.core import RabbitmqChannelLayer
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=300),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),

@@ -47,7 +47,12 @@ services:
       container_name: rabbitmq
       ports:
           - 5672:5672
-          - 15672:15672
+          # - 15672:15672
+
+  # jet:
+  #   image: hazelcast/hazelcast-jet
+  #   ports:
+  #     - "5701-5703:5701"
   
     
     

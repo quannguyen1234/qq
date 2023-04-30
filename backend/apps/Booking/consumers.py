@@ -7,7 +7,15 @@ import json
 from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
 from apps.User.references import REVERSE_USER_TYPE
+from channels.consumer import AsyncConsumer
 from channels.layers import get_channel_layer
+import pika
+import asyncio
+import json
+from channels_rabbitmq.core import RabbitmqChannelLayer
+import pika
+
+
 class AuthenToken:
 
     async def websocket_connect(self, event):
@@ -26,7 +34,12 @@ class AuthenToken:
             return False
         return True            
          
-         
+
+
+
+
+
+
 class Conversation(AuthenToken,AsyncWebsocketConsumer):
 
     def __init__(self, *args, **kwargs):
@@ -43,6 +56,9 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
         has_permission=False
         self.base_user=self.scope['user']
         self.user_type=await database_sync_to_async(lambda:self.base_user.user_type)()
+
+        
+        
         
         
         if ( await database_sync_to_async(lambda:hasattr(self.base_user,'user_doctor'))()
@@ -71,7 +87,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             has_permission=True
         
         if has_permission:
-            
+           
             await self.send(json.dumps(
                 {
                     'data':{
@@ -81,7 +97,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                         'flag':True
                     }     
                 }  
-            ))
+            )) 
         else:
             self.close()
 
@@ -139,9 +155,10 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             connect=await database_sync_to_async(lambda:ConnectDoctor.objects.get(doctor__doctor_id=doctor_id))()
             
             doctor_target_channel=await database_sync_to_async(lambda:connect.doctor_channel)()
-
+          
             # send to doctor interface a message about confirmings
             await self.send_message_to_channel(doctor_target_channel,{
+                
                 'type':'doctor-confirm-order',
                 'message':'Confirming Order!',
                 'patient_id':await database_sync_to_async(lambda:self.user.patient_id)(),
@@ -199,6 +216,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
     async def send_message_to_channel(self,channel_name, data):
       
         channel_layer = get_channel_layer()
+        # print(async_to_sync(channel_layer.channel_layer.group_channel_layer.group_channel_layer.has_channel)(channel_name))
         await channel_layer.send(channel_name, {
             'type': 'chat',
             'data':{**data},
@@ -218,3 +236,46 @@ def get_channel_from_connect_table(user_id,flag):
         return ConnectDoctor.objects.get(doctor__doctor_id=user_id).doctor_channel
     else:
         return ConnectDoctor.objects.get(patient__patient_id=user_id).patient_channel
+
+
+
+
+
+from channels.generic.websocket import AsyncWebsocketConsumer
+import json
+
+class ChatConsumer(AsyncWebsocketConsumer):
+
+    async def connect(self):
+        await self.channel_layer.group_add(
+            "chat",  # Group name
+            self.channel_name  # Channel name
+        )
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            "chat",  # Group name
+            self.channel_name  # Channel name
+        )
+
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        message = text_data_json['message']
+        user = text_data_json['user']
+        await self.channel_layer.group_send(
+            "chat",  # Group name
+            {
+                "type": "chat.message",
+                "message": message,
+                "user": user
+            }
+        )
+
+    async def chat_message(self, event):
+        message = event["message"]
+        user = event["user"]
+        await self.send(text_data=json.dumps({
+            'message': message,
+            'user': user
+        }))
