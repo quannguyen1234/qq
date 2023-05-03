@@ -34,12 +34,13 @@ if os.getenv('socket')=="redis":
 else:
     CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
-        "CONFIG": {
-            "host": "amqp://guest:guest@localhost:5672/",
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+        # "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
+        # "CONFIG": {
+        #     "host": "amqp://guest:guest@localhost:5672/",
            
-            "ssl_context": None
-        },
+        #     "ssl_context": None
+        # },
     },
 }
 # from channels_rabbitmq
