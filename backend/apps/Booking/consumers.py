@@ -1,20 +1,17 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
 from apps.User.models import Doctor,Patient
+from apps.PersonalManagement.models import Address
 from .models import ConnectDoctor
 from .views import receive_order
 import json
-from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
 from apps.User.references import REVERSE_USER_TYPE
-from channels.consumer import AsyncConsumer
 from channels.layers import get_channel_layer
-import pika
-import asyncio
 import json
 from channels_rabbitmq.core import RabbitmqChannelLayer
-import pika
-
+from channels.db import database_sync_to_async
+from .serializers import DoctorAppointmentsSerializer
 
 class AuthenToken:
 
@@ -165,12 +162,25 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                 'patient_name':await database_sync_to_async(lambda:self.user.base_user.get_full_name)(),
                 "patient_channel":self.channel_name
             })
-            
-        elif data['type']=='doctor-confirm-order':
-            is_receive_odrder=data.get('is_receive_odrder')
+        elif data['type']=='get-doctors':
+            resulf=await get_doctors(data)
+            await self.send(json.dumps(resulf))
+
+        elif data['type']=='cancel-order':
+            resulf,detail=await cancel_order(data)
+            await self.send(json.dumps(resulf))
+            await self.send_message_to_channel(detail['doctor_channel'],{
+                'message':"patient cancel order",
+                'patient_id':detail['patient_id'],
+                'flag':True,
+                'status':200,
+            })
+
+        elif data['type']=='doctor-confirm-order':  
+            is_receive_order=data.get('is_receive_order')
             patient_channel=data.get('patient_channel')
             
-            if is_receive_odrder:
+            if is_receive_order:
                 connect=await database_sync_to_async(lambda:ConnectDoctor.objects.get(doctor=self.user))()
                 patient=await database_sync_to_async(Patient.objects.get)(patient_id=data.get('patient_id'))
                 connect.patient=patient
@@ -237,9 +247,51 @@ def get_channel_from_connect_table(user_id,flag):
     else:
         return ConnectDoctor.objects.get(patient__patient_id=user_id).patient_channel
 
+@database_sync_to_async
+def get_doctors(data):
+    
+    address=data.pop('address')
+    department=data.pop('de_id')
+    district=address.get('district')
+    city=address.get('city')
+    
+    addresses=Address.objects.filter(
+        district__iregex=f"{district}",
+        city__iregex=f"{city}"
+    )
+    
+    #filter doctors is free
+    doctors=Doctor.objects.filter(
+        is_receive=True,
+        departments__de_id=department,
+        base_user__address__in=addresses
+    )
+    if len(doctors)==0:
+        return {
+            'flag':False,
+            'status':200,
+            'message':'No doctors'
+        }
+    else:
+        doctors_data=DoctorAppointmentsSerializer(doctors,many=True).data
+        
+        data=[]
+        for doctor_data in doctors_data:
+            data.append(dict(doctor_data))    
+        return {'doctors':data,'flag':True,'status':200}
 
-
-
+@database_sync_to_async
+def cancel_order(data):
+    patient_id=data.get('patient_id')
+    conversation=ConnectDoctor.objects.filter(patient__patient_id=patient_id)
+    if len(conversation)>0:
+        conversation=conversation[0]
+        patient_id=conversation.patient_id
+        doctor_channel=conversation.doctor_channel
+        conversation.patient_id=None
+        conversation.patient_channel=None
+        conversation.save()
+    return {'flag':True,'status':200,'message':"cancel order successfully!"},{'doctor_channel':doctor_channel,'patient_id':patient_id}
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json

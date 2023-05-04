@@ -10,7 +10,7 @@ from apps.PersonalManagement.models import Address
 from core.references import AddressEnum
 from django.db.transaction import atomic
 from django.http import JsonResponse
-from .permissions import DoctorAppointmentsPer
+from channels.db import database_sync_to_async
 # from .models import Appointment
 
 class DoctorAppointmentsAPI(GenericViewSet):
