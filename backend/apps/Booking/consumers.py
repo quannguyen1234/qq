@@ -174,7 +174,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
         elif data['type']=='doctor-confirm-order':  
             is_receive_order=data.get('is_receive_order')
             patient_channel=data.get('patient_channel')
-            print(data)
+        
             if is_receive_order:
                 connect=await database_sync_to_async(lambda:ConnectDoctor.objects.get(doctor=self.user))()
                 patient=await database_sync_to_async(Patient.objects.get)(patient_id=data.get('patient_id'))
@@ -190,10 +190,19 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                         'flag':True,
                         'status':200,
                         'message':'The doctor has received order',
+                        'address':await get_address(self.base_user),
                         'doctor_id':await database_sync_to_async(lambda:self.user.doctor_id)(),
                         'doctor_name':await database_sync_to_async(lambda:self.user.base_user.get_full_name)()
-                    }               
-                )    
+                    } 
+                )
+                await self.send(json.dumps({
+                    "data": {
+                        "message:":"The doctor has received order",
+                        "address":await get_address(patient.base_user),
+                        "status":200
+                    }
+                }))
+                    
             else:
                 await self.send_message_to_channel(patient_channel,
                     {
@@ -326,6 +335,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message,
             'user': user
         }))
+
+@database_sync_to_async
+def get_address(base_user):
+    return Address.objects.get(base_user=base_user).full_address
+    
 
 @database_sync_to_async
 def create_or_update_conversation(user,channel_name,flag='doctor'):

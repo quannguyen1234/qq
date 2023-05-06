@@ -18,6 +18,13 @@ class MedicalRecordAPI(ModelViewSet):
     permission_classes=[]
     serializer_class=serializers.MedicalRecordSerializer
     
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data = self.get_serializer(instance).data
+        data['flag']=True
+        data['status']=200
+        return JsonResponse(data)
+
     @atomic
     def create(self, request, *args, **kwargs):
         doctor=request.user.user_doctor
@@ -61,7 +68,6 @@ class MedicalRecordAPI(ModelViewSet):
         return response.Response(data)
 
 
-
     def get_patient(self,patient_id):
         try:
             patient=Patient.objects.get(patient_id=patient_id)
@@ -87,7 +93,7 @@ class MedicalRecordAPI(ModelViewSet):
         return response.Response(data)
     
     @action(methods=['GET'],detail=False,url_path='patient/(?P<patient_id>.+)/$')
-    def get_patients_record(self,request,patient_id=None):
+    def get_patients_records(self,request,patient_id=None):
         
         patient,message=self.get_patient(patient_id)
         if patient is  None:
@@ -105,3 +111,27 @@ class MedicalRecordAPI(ModelViewSet):
         return JsonResponse({'data':data,'flag':True,'status':200})
 
     
+    @action(methods=['GET'],detail=False,url_path='doctor/(?P<doctor_id>.+)/$')
+    def get_record_by_doctor(self,request,doctor_id):
+        records=MedicalRecord.objects.all()
+        data=[]
+        current_year=datetime.datetime.now().year
+        for record in records:
+            record_data={}
+            base_user=record.patient.base_user
+            record_data['patient_name']=base_user.get_full_name
+            try:
+                age=current_year-base_user.birth_day.year
+            except:
+                age=None
+            record_data['age']=age 
+            try:
+                gender=base_user.gender
+            except:
+                gender=None
+            record_data['gender']=gender
+            record_data['date']=f"{record.date.month}-{record.date.month}-{record.date.year}"
+            data.append(record_data)
+        return JsonResponse({'data':data,'flag':True,'status':200})
+            
+
