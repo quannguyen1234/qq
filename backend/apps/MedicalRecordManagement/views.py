@@ -130,7 +130,7 @@ class MedicalRecordAPI(ModelViewSet):
             except:
                 gender=None
             record_data['gender']=gender
-            record_data['date']=f"{record.date.month}-{record.date.month}-{record.date.year}"
+            record_data['date']=f"{record.date.day}-{record.date.month}-{record.date.year}"
             data.append(record_data)
         return JsonResponse({'data':data,'flag':True,'status':200})
             
