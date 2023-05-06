@@ -13,7 +13,7 @@ from .serializers import PatientSerializer,DoctorSerializer
 from . import permission
 from core.references import ImageEnum
 from core.utils import( Custom_CheckPermisson,
- split_name,is_valid,save_file,set_name_file,upload_image
+ split_name,is_valid
 )
 from apps.User.serializers import BaseUserSerializer
 from django.contrib.auth.password_validation import validate_password
@@ -21,8 +21,8 @@ from django.db.transaction import atomic
 class PatientAPI(Custom_CheckPermisson,ModelViewSet):
     queryset = Patient.objects.all()    
     serializer_class = PatientSerializer
-    permission_classes = [permission.CreateAction | (IsAuthenticated & (permission.IsOwner|permission.IsAdmin))]
-
+    permission_classes = [permission.PermitedAction | (IsAuthenticated & (permission.InConversation|permission.IsOwner|permission.IsAdmin))]
+    
 
     def get_permissions(self):
         setattr(self.request,'action',self.action)
@@ -43,7 +43,16 @@ class PatientAPI(Custom_CheckPermisson,ModelViewSet):
             return response.Response({'data':serializer.data,'status':200,'flag':True})
         except:
             return response.Response({'data':serializer.data,'status':409,'flag':False}) 
-        
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            data =self.get_serializer(instance).data
+            data={**data,'flag':True,'status':200}
+            return JsonResponse(data)
+        except:
+            return JsonResponse({'flag':False,'status':409})
+    
     def create(self, request, *args, **kwargs):        
         base_user_data=request.data['base_user']
       
@@ -102,9 +111,14 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
     # permission_classes=[permission.CreateAction |(IsAuthenticated & (permission.IsAdmin |permission.IsOwner))]
     
     def get_permissions(self):
-
         setattr(self.request,'action',self.action)
         return super().get_permissions()
+    
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data =self.get_serializer(instance).data
+        data={**data,'flag':True,'status':200}
+        return JsonResponse(data)
     
     def perform_create(self, serializer):
         instance=serializer.save()
@@ -114,6 +128,10 @@ class DoctorAPI(Custom_CheckPermisson,ModelViewSet):
         instance=serializer.save()
         return instance
     
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+
     @action(methods=['GET'],detail=False,url_path='get-doctor')
     def get_doctor_approved(self,request):
         

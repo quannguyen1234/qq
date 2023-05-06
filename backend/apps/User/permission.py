@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from apps.Booking.models import ConnectDoctor
 from apps.User.references import REVERSE_USER_TYPE,RELATED_USER
 
 class IsPatient(BasePermission):
@@ -23,10 +24,10 @@ class IsAdmin(BasePermission):
             return True
         return False
           
-class CreateAction(BasePermission):
+class PermitedAction(BasePermission):
     
     def has_permission(self, request, view):
-        if request.action=="create":
+        if request.action in ['create']:
             return True
         return False
 
@@ -44,4 +45,14 @@ class IsOwner(BasePermission):
         user=request.user
         return getattr(user,RELATED_USER[user.user_type])==obj
         
-    
+class InConversation(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        if REVERSE_USER_TYPE['Doctor']==request.user.user_type:
+            doctor=request.user.user_doctor
+            if ConnectDoctor.objects.filter(
+                doctor=doctor,
+                patient=obj
+            ).exists():
+                return True
+        return False

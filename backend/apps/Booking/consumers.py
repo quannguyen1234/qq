@@ -54,10 +54,6 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
         self.base_user=self.scope['user']
         self.user_type=await database_sync_to_async(lambda:self.base_user.user_type)()
 
-        
-        
-        
-        
         if ( await database_sync_to_async(lambda:hasattr(self.base_user,'user_doctor'))()
            and await database_sync_to_async(lambda:hasattr(self.base_user,'user_patient'))() ):
             await self.send(json.dumps({
@@ -72,15 +68,14 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             
         elif self.user_type == REVERSE_USER_TYPE['Doctor']:
             self.user= await database_sync_to_async(lambda:self.base_user.user_doctor)()
-            await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
-            await database_sync_to_async(lambda:ConnectDoctor.objects.create(
-                doctor=self.user,
-                doctor_channel=self.channel_name
-            ))()
+            # await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
+
+            await create_or_update_conversation(self.user,self.channel_name,'doctor')
             has_permission=True
 
         elif self.user_type == REVERSE_USER_TYPE['Patient']:
             self.user= await database_sync_to_async(lambda:self.base_user.user_patient)()
+            await create_or_update_conversation(self.user,self.channel_name,'patient')
             has_permission=True
         
         if has_permission:
@@ -104,8 +99,8 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
         
         if  self.user_type is not  None:
             if self.user_type==REVERSE_USER_TYPE['Doctor']:
-                
-                await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
+                pass
+                # await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
                 
                 # turn off receving order signal 
                 self.user.is_receive=True
@@ -113,8 +108,8 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             
 
             if self.user_type==REVERSE_USER_TYPE['Patient']:
-                
-                await database_sync_to_async(lambda:ConnectDoctor.objects.filter(patient=self.user).delete())()
+                pass
+                # await database_sync_to_async(lambda:ConnectDoctor.objects.filter(patient=self.user).delete())()
         await self.disconnect(code=None)
                 
     async def disconnect(self,code):
@@ -150,7 +145,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             
             doctor_id=data['doctor']
             connect=await database_sync_to_async(lambda:ConnectDoctor.objects.get(doctor__doctor_id=doctor_id))()
-            
+            await database_sync_to_async(lambda:receive_order(self.base_user,data))()  
             doctor_target_channel=await database_sync_to_async(lambda:connect.doctor_channel)()
           
             # send to doctor interface a message about confirmings
@@ -179,7 +174,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
         elif data['type']=='doctor-confirm-order':  
             is_receive_order=data.get('is_receive_order')
             patient_channel=data.get('patient_channel')
-            
+            print(data)
             if is_receive_order:
                 connect=await database_sync_to_async(lambda:ConnectDoctor.objects.get(doctor=self.user))()
                 patient=await database_sync_to_async(Patient.objects.get)(patient_id=data.get('patient_id'))
@@ -331,3 +326,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message,
             'user': user
         }))
+
+@database_sync_to_async
+def create_or_update_conversation(user,channel_name,flag='doctor'):
+    if flag=='doctor':
+            # await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
+        try:
+            conversation=ConnectDoctor.objects.get(
+                doctor=user
+            )
+        except:
+            conversation=None
+        #create doctor
+        if conversation is None:
+            conversation=ConnectDoctor.objects.create(
+                doctor=user,
+                doctor_channel=channel_name   
+            )
+        #update doctor
+        else:
+            conversation.doctor_channel=channel_name
+            conversation.save()
+    else:
+        print("vao day")
+        try:
+            conversation=ConnectDoctor.objects.get(
+                patient=user
+            )
+        except:
+            conversation=None        
+
+        if not conversation is None:
+            conversation.patient_channel=channel_name
+            conversation.save()
