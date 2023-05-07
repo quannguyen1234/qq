@@ -10,6 +10,7 @@ class MedicalRecord(models.Model):
         db_table="MedicalRecord"
 
     record_id=models.CharField(primary_key=True,max_length=36,default=uuid.uuid4)
+    name=models.CharField(max_length=128,null=False,default=" ")
     symptom=models.TextField(null=False)
     diagnosis=models.TextField(null=False)
     treatment_plan=models.TextField(null=False)

@@ -1,4 +1,5 @@
 from .models import *
+from apps.User.serializers import PatientSerializer
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status,response
 from .import serializers
@@ -9,9 +10,6 @@ from rest_framework.decorators import action
 from apps.User.models import Patient
 from rest_framework.exceptions import ValidationError
 import datetime
-# from rest_framework.permissions import IsAuthenticated
-# class PrescriptionAPI(ModelViewSet):
-    # queryset=Pre
 
 class MedicalRecordAPI(ModelViewSet):
     queryset=MedicalRecord.objects.all()
@@ -98,16 +96,29 @@ class MedicalRecordAPI(ModelViewSet):
         patient,message=self.get_patient(patient_id)
         if patient is  None:
             return JsonResponse(message)
+        
+        data={}
+
+        patient_data=PatientSerializer(patient).data
+        base_user=patient_data['base_user']
+        base_user.pop('password')
+        base_user.pop('is_active')
+        base_user.pop('current_address')
+        base_user.pop('birth_day')
+        base_user.pop('id')
         records=patient.records.all()
-        data=serializers.MedicalRecordSerializer(records,many=True).data
+        records_data=serializers.MedicalRecordSerializer(records,many=True).data
+        
         for index,record in enumerate(records):
             current_base_user=record.doctor.base_user
-            current_record=data[index]
+            current_record=records_data[index]
             current_record['doctor_name']=current_base_user.get_full_name
             current_record['current_job']=record.doctor.current_job
             current_record['departments']=list(record.doctor.departments.all().values_list('name',flat=True))
         
-            
+        data['patient']=patient_data
+        data['records']=records_data
+        
         return JsonResponse({'data':data,'flag':True,'status':200})
 
     
@@ -133,5 +144,6 @@ class MedicalRecordAPI(ModelViewSet):
             record_data['date']=f"{record.date.day}-{record.date.month}-{record.date.year}"
             data.append(record_data)
         return JsonResponse({'data':data,'flag':True,'status':200})
-            
+
+   
 

@@ -12,7 +12,7 @@ class PrescriptionSerializer(serializers.ModelSerializer):
 class MedicalRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model=MedicalRecord
-        fields=['record_id','symptom','diagnosis','treatment_plan','condition','date','prescriptions'
+        fields=['record_id','name','symptom','diagnosis','treatment_plan','condition','date','prescriptions'
                 ,'patient_id','doctor','doctor_id'
                 ]
         extra_kwargs = {
