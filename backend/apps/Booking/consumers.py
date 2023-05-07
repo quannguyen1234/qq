@@ -12,7 +12,7 @@ import json
 from channels_rabbitmq.core import RabbitmqChannelLayer
 from channels.db import database_sync_to_async
 from .serializers import DoctorAppointmentsSerializer
-
+from asgiref.sync import async_to_sync
 class AuthenToken:
 
     async def websocket_connect(self, event):
@@ -236,6 +236,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                     'status':200
                 }
             })
+            close_channel(patient_channel)
             
         elif data['type']=='disconnect':
             await self.websocket_disconnect()
@@ -334,6 +335,17 @@ def get_doctors(data):
             data.append(dict(doctor_data))    
         return {'doctors':data,'flag':True,'status':200}
 
+
+def close_channel(channel_name):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.send)(
+        channel_name,
+        {
+            "type": "websocket.close",
+            "code": 1000,  # Mã đóng kênh (tùy chọn)
+        },
+    )
+
 @database_sync_to_async
 def cancel_order(data):
     patient_id=data.get('patient_id')
@@ -347,44 +359,8 @@ def cancel_order(data):
         conversation.save()
     return {'flag':True,'status':200,'message':"cancel order successfully!"},{'doctor_channel':doctor_channel,'patient_id':patient_id}
 
-from channels.generic.websocket import AsyncWebsocketConsumer
-import json
 
-class ChatConsumer(AsyncWebsocketConsumer):
 
-    async def connect(self):
-        await self.channel_layer.group_add(
-            "chat",  # Group name
-            self.channel_name  # Channel name
-        )
-        await self.accept()
-
-    async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            "chat",  # Group name
-            self.channel_name  # Channel name
-        )
-
-    async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-        user = text_data_json['user']
-        await self.channel_layer.group_send(
-            "chat",  # Group name
-            {
-                "type": "chat.message",
-                "message": message,
-                "user": user
-            }
-        )
-
-    async def chat_message(self, event):
-        message = event["message"]
-        user = event["user"]
-        await self.send(text_data=json.dumps({
-            'message': message,
-            'user': user
-        }))
 
 @database_sync_to_async
 def get_address(base_user):
