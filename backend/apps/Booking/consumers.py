@@ -70,12 +70,21 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             self.user= await database_sync_to_async(lambda:self.base_user.user_doctor)()
             # await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
 
-            await create_or_update_conversation(self.user,self.channel_name,'doctor')
+            action,to_user=await create_or_update_conversation(self.user,self.channel_name,'doctor')
+
+            if action=='update':
+                await self.reconnect_conversation(to_user,'to_patient')
+
+                
             has_permission=True
 
         elif self.user_type == REVERSE_USER_TYPE['Patient']:
             self.user= await database_sync_to_async(lambda:self.base_user.user_patient)()
-            await create_or_update_conversation(self.user,self.channel_name,'patient')
+            action,to_user=await create_or_update_conversation(self.user,self.channel_name,'patient')
+
+            if action=='update':
+                await self.reconnect_conversation(to_user,'to_doctor')
+
             has_permission=True
         
         if has_permission:
@@ -218,6 +227,15 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
 
         elif data['type']=='doctor-finish-order':
             patient_channel=await finish_odrer(self.user)
+            self.send_message_to_channel(patient_channel,{
+                "type":"doctor-finish-order",
+                "data":{
+                    'message':"patient cancel order",
+                    'patient_id':detail['patient_id'],
+                    'flag':True,
+                    'status':200
+                }
+            })
             
         elif data['type']=='disconnect':
             await self.websocket_disconnect()
@@ -231,7 +249,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             # }))   
         
 
-    async def send_message_to_channel(self,channel_name, data):
+    async def send_message_to_channel(self,channel_name, data): 
       
         channel_layer = get_channel_layer()
         # print(async_to_sync(channel_layer.channel_layer.group_channel_layer.group_channel_layer.has_channel)(channel_name))
@@ -240,6 +258,34 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             'data':{**data},
         })
         
+    async def reconnect_conversation(self,to_user,flag='to_doctor'):
+        to_base_user=await database_sync_to_async(lambda:to_user.base_user)()
+        address= await get_address(to_base_user)
+
+        if flag=='to_doctor':    
+            await self.send(json.dumps({
+                    'type':'reconect-patient',
+                    'data':{
+                        "message": "Reconnect",
+                        'status':200,
+                        'flag': True,
+                        'address':address,
+                        'doctor_name':await database_sync_to_async(lambda:to_base_user.get_full_name)(),
+                        'doctor_id':await database_sync_to_async(lambda:to_user.doctor_id)()
+                    }     
+            }))
+        else:
+            await self.send(json.dumps({
+                    'type':'reconect-doctor',
+                    'data':{
+                        "message": "Reconnect",
+                        'status':200,
+                        'flag': True,
+                        'address':address,
+                        'patient_name':await database_sync_to_async(lambda:to_base_user.get_full_name)(),
+                        'patient_id':await database_sync_to_async(lambda:to_user.patient_id)()
+                    }     
+            }))
 
         
         
@@ -365,8 +411,10 @@ def create_or_update_conversation(user,channel_name,flag='doctor'):
         else:
             conversation.doctor_channel=channel_name
             conversation.save()
+            return 'update',conversation.patient
+        
     else:
-        print("vao day")
+        
         try:
             conversation=ConnectDoctor.objects.get(
                 patient=user
@@ -377,6 +425,9 @@ def create_or_update_conversation(user,channel_name,flag='doctor'):
         if not conversation is None:
             conversation.patient_channel=channel_name
             conversation.save()
+            return 'update',conversation.doctor
+    return 'create',None
+    
 
 @database_sync_to_async
 def finish_odrer(doctor):
@@ -384,3 +435,7 @@ def finish_odrer(doctor):
     patient_channel=conversation.patient_channel
     conversation.delete()
     return patient_channel
+
+
+
+    
