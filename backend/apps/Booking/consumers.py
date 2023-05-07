@@ -195,10 +195,11 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                         'doctor_name':await database_sync_to_async(lambda:self.user.base_user.get_full_name)()
                     } 
                 )
+                patient_base_user=await database_sync_to_async(lambda:patient.base_user)()
                 await self.send(json.dumps({
                     "data": {
                         "message:":"The doctor has received order",
-                        "address":await get_address(patient.base_user),
+                        "address":await get_address(patient_base_user),
                         "status":200
                     }
                 }))
@@ -215,6 +216,9 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                     }               
                 )    
 
+        elif data['type']=='doctor-finish-order':
+            patient_channel=await finish_odrer(self.user)
+            
         elif data['type']=='disconnect':
             await self.websocket_disconnect()
             
@@ -373,3 +377,10 @@ def create_or_update_conversation(user,channel_name,flag='doctor'):
         if not conversation is None:
             conversation.patient_channel=channel_name
             conversation.save()
+
+@database_sync_to_async
+def finish_odrer(doctor):
+    conversation=ConnectDoctor.objects.filter(doctor=doctor)
+    patient_channel=conversation.patient_channel
+    conversation.delete()
+    return patient_channel
