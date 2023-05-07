@@ -410,9 +410,9 @@ def create_or_update_conversation(user,channel_name,flag='doctor'):
         #update doctor
         else:
             conversation.doctor_channel=channel_name
-            conversation.save()
-            return 'update',conversation.patient
-        
+            if conversation.patient!=None:
+                conversation.save()
+                return 'update',conversation.patient
     else:
         
         try:
@@ -426,7 +426,7 @@ def create_or_update_conversation(user,channel_name,flag='doctor'):
             conversation.patient_channel=channel_name
             conversation.save()
             return 'update',conversation.doctor
-    return 'create',None
+    return ' ',None
     
 
 @database_sync_to_async
