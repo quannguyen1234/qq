@@ -45,7 +45,9 @@ INSTALLED_APPS = [
     'apps.MedicalRecordManagement',
     'corsheaders',
     'apps.Booking',
+    'apps.Transaction',
     'channels',
+    
 ]
 
 MIDDLEWARE = [

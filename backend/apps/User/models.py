@@ -148,6 +148,9 @@ class Doctor(models.Model):
 
     class Meta:
         db_table="Doctor"
+        constraints=[
+            models.CheckConstraint(check=models.Q(diagnostic_fee__gte=0), name='diagnostic_fee_gte_0') ,
+        ]
 
     doctor_id=models.CharField(max_length=10,primary_key=True)
     degree=models.CharField(max_length=20,null=False,default="")
@@ -155,7 +158,7 @@ class Doctor(models.Model):
     expreience=models.TextField(null=False,default="")
     base_user=models.OneToOneField(BaseUser,related_name="user_doctor",on_delete=models.CASCADE)
     is_receive=models.BooleanField(default=False)
-    
+    diagnostic_fee=models.FloatField(null=True,default=0)
     def __str__(self) -> str:
         try:
             return f"{self.doctor_id}-{self.base_user.get_full_name}"  

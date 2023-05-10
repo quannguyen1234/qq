@@ -25,5 +25,6 @@ urlpatterns = [
     path("personal-management/",include('apps.PersonalManagement.urls')),
     path('medical-record-mangament/',include('apps.MedicalRecordManagement.urls')),
     path("booking/",include('apps.Booking.urls')),
+    path('transaction-management/',include('apps.Transaction.urls')),
     path("upload-image",upload_image_api),
 ]
