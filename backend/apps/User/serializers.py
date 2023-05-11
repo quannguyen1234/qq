@@ -109,8 +109,8 @@ class DoctorSerializer(serializers.ModelSerializer):
         fields = ['doctor_id','degree','current_job','base_user'
                   ,'notarized_images','departments','avatar','name_images']
     
-    notarized_images=serializers.ListField(child=serializers.CharField())
-    name_images=serializers.JSONField(write_only=True)
+    notarized_images=serializers.ListField(child=serializers.CharField(),required=False)
+    name_images=serializers.JSONField(write_only=True,required=False)
     avatar=serializers.CharField(source='base_user.avatar',required=False)
     base_user = BaseUserSerializer()
     departments=HospitalDepartmentSerializer(many=True,read_only=True)
@@ -122,10 +122,14 @@ class DoctorSerializer(serializers.ModelSerializer):
  
     @atomic
     def create(self, validated_data):
-       
-    
-        notarized_images=validated_data.pop('notarized_images')
-        name_images=validated_data.pop('name_images')
+        
+        if validated_data.__contains__('notarized_images'):
+            name_images=validated_data.pop('name_images')
+            notarized_images=validated_data.pop('notarized_images')
+        else:
+            notarized_images=[]
+            name_images=[]
+        
         base_user_data = {**validated_data.pop('base_user')} 
     
         if base_user_data.__contains__('current_address'):
