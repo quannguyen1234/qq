@@ -41,7 +41,7 @@ class DiagnosticBill(models.Model):
     patient=models.ForeignKey(Patient,null=True,on_delete=models.SET_NULL)
     created = models.DateTimeField(auto_now_add=True)
     pay_time= models.DateTimeField(null=True)
-    diagnostic_form=models.CharField(max_length=32,choices=DiagnosticFormEnum.__tupple__())
+    diagnostic_form=models.IntegerField(choices=DiagnosticFormEnum.__tupple__())
 
 class DiagnosticBillDetail(models.Model):
     class Meta:
@@ -49,14 +49,18 @@ class DiagnosticBillDetail(models.Model):
         constraints=[
             models.CheckConstraint(check=models.Q(distance__gte=0), name='distance_gte_0') ,
             models.CheckConstraint(check=models.Q(doctor_fee__gte=0), name='doctor_fee_gte_0') ,
-            models.CheckConstraint(check=models.Q(total_fee__gte=0), name='total_fee_gte_0') ,
+            # models.CheckConstraint(check=models.Q(total_fee__gte=0), name='total_fee_gte_0') ,
         ]
         
     id=models.CharField(primary_key=True,max_length=36,default = uuid.uuid4)
     bill=models.ForeignKey(DiagnosticBill,on_delete=models.CASCADE,null=False)
     distance=models.IntegerField(default=0)
     doctor_fee=models.FloatField(default=0)
-    total_fee=models.FloatField(default=0)
+    # total_fee=models.FloatField(default=0)
+
+    @property
+    def total_fee(self):
+        return self.distance * self.doctor_fee
 
 
 
