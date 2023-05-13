@@ -7,3 +7,4 @@ class ConnectDoctor(models.Model):
     patient=models.ForeignKey(Patient,on_delete=models.CASCADE,null=True)
     patient_channel=models.TextField(null=True)
     is_confirm=models.BooleanField(default=False)
+    fee=models.FloatField(default=0)

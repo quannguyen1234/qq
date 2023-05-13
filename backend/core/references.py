@@ -68,3 +68,6 @@ class DiagnosticFormEnum(Enum):
         for i in cls.__iter__():
             arr.append((i.value,i.name))
         return tuple(arr)
+    
+
+FEE_DISTANCE=1000

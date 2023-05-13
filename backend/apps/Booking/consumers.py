@@ -4,6 +4,7 @@ from apps.User.models import Doctor,Patient
 from apps.PersonalManagement.models import Address
 from .models import ConnectDoctor
 from .views import receive_order
+from apps.Transaction.views import check_amount,FeeBooking,HoldMoney
 import json
 from channels.db import database_sync_to_async
 from apps.User.references import REVERSE_USER_TYPE
@@ -13,6 +14,7 @@ from channels_rabbitmq.core import RabbitmqChannelLayer
 from channels.db import database_sync_to_async
 from .serializers import DoctorAppointmentsSerializer
 from asgiref.sync import async_to_sync
+
 class AuthenToken:
 
     async def websocket_connect(self, event):
@@ -132,7 +134,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
         
         await self.close()
             
-
+ 
     async def receive(self, text_data=None, bytes_data=None):
 
         data=json.loads(text_data)
@@ -151,12 +153,28 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             await database_sync_to_async(lambda:self.user.save())()
 
         elif data['type']=='patient-choose-doctor':
-            
+            patient=self.user
             doctor_id=data['doctor']
             connect=await database_sync_to_async(lambda:ConnectDoctor.objects.get(doctor__doctor_id=doctor_id))()
             await database_sync_to_async(lambda:receive_order(self.base_user,data))()  
             doctor_target_channel=await database_sync_to_async(lambda:connect.doctor_channel)()
-          
+            doctor= await database_sync_to_async(lambda:connect.doctor)()
+            fee=FeeBooking( doctor,data['distance']).get_fee()
+
+            connect.fee=fee
+            
+            await database_sync_to_async(lambda:connect.save())() 
+
+            if not  await check_amount(fee,await database_sync_to_async(lambda:patient.base_user)()):
+                
+                await self.send(json.dumps({
+                    'type':'patient-out-of-money',
+                    'data':{
+                        "message": "Run out of money",
+                    }     
+                }))
+                return 
+
             # send to doctor interface a message about confirmings
             await self.send_message_to_channel(doctor_target_channel,{
                 
@@ -166,6 +184,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                 'patient_name':await database_sync_to_async(lambda:self.user.base_user.get_full_name)(),
                 "patient_channel":self.channel_name
             })
+            
         elif data['type']=='get-doctors':
             resulf=await get_doctors(data)
             await self.send(json.dumps(resulf))
@@ -192,7 +211,11 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                 connect.is_confirm=True
                 await database_sync_to_async(lambda:connect.save())()
                 
+                # hold_money=HoldMoney(await database_sync_to_async(lambda:patient.base_user)())
+                # await database_sync_to_async(lambda:hold_money.run(fee))()
+                
                 # send the message to client interface
+                
                 await self.send_message_to_channel(patient_channel,
                     {
                         'type':'doctor-confirm-order',
@@ -211,7 +234,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                         "address":await get_address(patient_base_user),
                         "status":200
                     }
-                }))
+                })) 
                     
             else:
                 await self.send_message_to_channel(patient_channel,
