@@ -39,6 +39,19 @@ class PatientHoldMoney(HoldMoney):
 
         patients_wallet.transfer_money(fee,admin_wallet)
 
+    def return_money(self,fee):
+
+        patients_wallet=Wallet.objects.get(
+            base_user=self.base_user
+        )
+
+        admin_wallet=Wallet.objects.get(
+            base_user=Admin.objects.get(admin_id='1').base_user
+        )
+
+        admin_wallet.transfer_money(fee,patients_wallet)
+
+
 class TransferMoney:
     def __init__(self,base_user) -> None:
         self.base_user=base_user

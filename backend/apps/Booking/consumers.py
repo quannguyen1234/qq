@@ -73,7 +73,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             self.user= await database_sync_to_async(lambda:self.base_user.user_doctor)()
             
             # await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
-
+            
             action,to_user=await create_or_update_conversation(self.user,self.channel_name,'doctor')
 
             if action=='update':
@@ -177,7 +177,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                     }     
                 }))
                 return 
-
+            print(doctor_target_channel)
             # send to doctor interface a message about confirmings
             await self.send_message_to_channel(doctor_target_channel,{
                 
@@ -193,7 +193,20 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             await self.send(json.dumps(resulf))
 
         elif data['type']=='cancel-order':
-            resulf,detail=await cancel_order(data)
+            try:
+                resulf,detail=await cancel_order(data)
+            except:
+                await self.send(json.dumps({"message":"loi gi do"}))
+                return 
+            
+            conversation=detail['conversation']
+
+            await return_money_patient(conversation)
+
+            conversation.patient_id=None
+            conversation.patient_channel=None
+            conversation.fee=0
+            await database_sync_to_async(lambda:conversation.save())()
             await self.send(json.dumps(resulf))
             await self.send_message_to_channel(detail['doctor_channel'],{
                 'message':"patient cancel order",
@@ -259,7 +272,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             _,admin_base_user=await get_admin()
             transfer=TransferMoney(admin_base_user)
             await database_sync_to_async(lambda:transfer.transfer(fee,doctor_base_user))()
-            
+            await disable_receving_order(self.user)
             await self.websocket_disconnect()
         
         elif data['type']=='disconnect':
@@ -336,13 +349,16 @@ def get_doctors(data):
         district__iregex=f"{district}",
         city__iregex=f"{city}"
     )
-    
+    list_doctor_having_order=list(ConnectDoctor.objects.values_list('doctor__doctor_id',flat=True))
+   
     #filter doctors is free
     doctors=Doctor.objects.filter(
         is_receive=True,
         departments__de_id=department,
-        base_user__address__in=addresses
-    )
+        base_user__address__in=addresses,
+    ).exclude(doctor_id__in=list_doctor_having_order)
+    
+
     if len(doctors)==0:
         return {
             'flag':False,
@@ -368,11 +384,9 @@ def cancel_order(data):
         conversation=conversation[0]
         patient_id=conversation.patient_id
         doctor_channel=conversation.doctor_channel
-        conversation.patient_id=None
-        conversation.patient_channel=None
         conversation.save()
-    return {'flag':True,'status':200,'message':"cancel order successfully!"},{'doctor_channel':doctor_channel,'patient_id':patient_id}
-
+        return {'flag':True,'status':200,'message':"cancel order successfully!"},{'conversation':conversation,'doctor_channel':doctor_channel,'patient_id':patient_id}
+    raise ValueError("loi")
 
 
 
@@ -400,8 +414,8 @@ def create_or_update_conversation(user,channel_name,flag='doctor'):
         #update doctor
         else:
             conversation.doctor_channel=channel_name
+            conversation.save()
             if conversation.patient!=None:
-                conversation.save()
                 return 'update',conversation.patient
     else:
         
@@ -440,3 +454,8 @@ def extract_distance(msg_distance):
 def get_admin():
     admin=Admin.objects.get(admin_id='1')
     return admin,admin.base_user
+
+@database_sync_to_async
+def return_money_patient(conversation):
+    hold_money=PatientHoldMoney(conversation.patient.base_user)
+    hold_money.return_money(conversation.fee)
