@@ -26,6 +26,7 @@ class PatientHoldMoney(HoldMoney):
     def __init__(self, base_user) -> None:
         super().__init__(base_user)
     
+
     def run(self,fee):
         
         patients_wallet=Wallet.objects.get(
@@ -38,7 +39,20 @@ class PatientHoldMoney(HoldMoney):
 
         patients_wallet.transfer_money(fee,admin_wallet)
 
-        
+class TransferMoney:
+    def __init__(self,base_user) -> None:
+        self.base_user=base_user
+
+    def transfer(self,fee,to_base_user):
+        from_wallet=Wallet.objects.get(
+            base_user=self.base_user
+        )
+        to_wallet=Wallet.objects.get(
+            base_user=to_base_user
+        )
+        from_wallet.transfer_money(fee,to_wallet)
+
+    
 class Fee:
     def __init__(self,doctor) -> None:
         self.doctor=doctor
@@ -53,6 +67,7 @@ class FeeBooking(Fee):
         self.distance=distance
 
     def get_fee(self):
+    
         return self.doctor.diagnostic_fee + self.distance*FEE_DISTANCE
 
 

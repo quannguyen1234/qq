@@ -1,10 +1,11 @@
+from core.references import AddressEnum
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
-from apps.User.models import Doctor,Patient
+from apps.User.models import Doctor,Patient,Admin
 from apps.PersonalManagement.models import Address
 from .models import ConnectDoctor
 from .views import receive_order
-from apps.Transaction.views import check_amount,FeeBooking,HoldMoney
+from apps.Transaction.views import check_amount,FeeBooking,PatientHoldMoney,TransferMoney
 import json
 from channels.db import database_sync_to_async
 from apps.User.references import REVERSE_USER_TYPE
@@ -70,6 +71,7 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             
         elif self.user_type == REVERSE_USER_TYPE['Doctor']:
             self.user= await database_sync_to_async(lambda:self.base_user.user_doctor)()
+            
             # await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
 
             action,to_user=await create_or_update_conversation(self.user,self.channel_name,'doctor')
@@ -114,8 +116,8 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                 # await database_sync_to_async(lambda:ConnectDoctor.objects.filter(doctor=self.user).delete())()
                 
                 # turn off receving order signal 
-                self.user.is_receive=True
-                await database_sync_to_async(lambda:self.user.save())()
+                # self.user.is_receive=True
+                # await database_sync_to_async(lambda:self.user.save())()
             
 
             if self.user_type==REVERSE_USER_TYPE['Patient']:
@@ -159,7 +161,8 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             await database_sync_to_async(lambda:receive_order(self.base_user,data))()  
             doctor_target_channel=await database_sync_to_async(lambda:connect.doctor_channel)()
             doctor= await database_sync_to_async(lambda:connect.doctor)()
-            fee=FeeBooking( doctor,data['distance']).get_fee()
+            distance=extract_distance(data['distance'])
+            fee=FeeBooking( doctor,distance).get_fee()
 
             connect.fee=fee
             
@@ -206,13 +209,14 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
             if is_receive_order:
                 connect=await database_sync_to_async(lambda:ConnectDoctor.objects.get(doctor=self.user))()
                 patient=await database_sync_to_async(Patient.objects.get)(patient_id=data.get('patient_id'))
+                fee=await database_sync_to_async(lambda:connect.fee)()
                 connect.patient=patient
                 connect.patient_channel=data.get('patient_channel')
                 connect.is_confirm=True
                 await database_sync_to_async(lambda:connect.save())()
                 
-                # hold_money=HoldMoney(await database_sync_to_async(lambda:patient.base_user)())
-                # await database_sync_to_async(lambda:hold_money.run(fee))()
+                hold_money=PatientHoldMoney(await database_sync_to_async(lambda:patient.base_user)())
+                await database_sync_to_async(lambda:hold_money.run(fee))()
                 
                 # send the message to client interface
                 
@@ -249,28 +253,23 @@ class Conversation(AuthenToken,AsyncWebsocketConsumer):
                 )    
 
         elif data['type']=='doctor-finish-order':
-            patient_channel=await finish_odrer(self.user)
-            self.send_message_to_channel(patient_channel,{
-                "type":"doctor-finish-order",
-                "data":{
-                    'message':"patient cancel order",
-                    'patient_id':detail['patient_id'],
-                    'flag':True,
-                    'status':200
-                }
-            })
-            close_channel(patient_channel)
+            patient_channel,patient_base_user,fee=await finish_odrer(self.user)
+            #doctor receive money
+            doctor_base_user=self.base_user
+            _,admin_base_user=await get_admin()
+            transfer=TransferMoney(admin_base_user)
+            await database_sync_to_async(lambda:transfer.transfer(fee,doctor_base_user))()
             
+            await self.websocket_disconnect()
+        
         elif data['type']=='disconnect':
             await self.websocket_disconnect()
+
+        elif data['type']=='turn-off-receiving-order':
+            await disable_receving_order(self.user)
+            await self.websocket_disconnect()
             
-            # await self.send(json.dumps({
-            #     "data": {
-            #         "message:":"Confirming Order!",
-            #         "patient_id":
-            #         "status":200
-            #     },
-            # }))   
+
         
 
     async def send_message_to_channel(self,channel_name, data): 
@@ -359,15 +358,7 @@ def get_doctors(data):
         return {'doctors':data,'flag':True,'status':200}
 
 
-def close_channel(channel_name):
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.send)(
-        channel_name,
-        {
-            "type": "websocket.close",
-            "code": 1000,  # Mã đóng kênh (tùy chọn)
-        },
-    )
+
 
 @database_sync_to_async
 def cancel_order(data):
@@ -430,11 +421,22 @@ def create_or_update_conversation(user,channel_name,flag='doctor'):
 
 @database_sync_to_async
 def finish_odrer(doctor):
-    conversation=ConnectDoctor.objects.filter(doctor=doctor)
+    conversation=ConnectDoctor.objects.filter(doctor=doctor)[0]
     patient_channel=conversation.patient_channel
-    conversation.delete()
-    return patient_channel
+    # conversation.delete()
+    return patient_channel,conversation.patient.base_user,conversation.fee
+
+@database_sync_to_async
+def disable_receving_order(doctor):
+    ConnectDoctor.objects.filter(doctor=doctor).delete()
+    Address.objects.filter(base_user=doctor.base_user,address_type=AddressEnum.CurrentAddress.value).delete()
+
+def extract_distance(msg_distance):
+    # distance: 4.6 km
+    return float(msg_distance.split(' ')[-2])
 
 
-
-    
+@database_sync_to_async
+def get_admin():
+    admin=Admin.objects.get(admin_id='1')
+    return admin,admin.base_user

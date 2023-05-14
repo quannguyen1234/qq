@@ -70,4 +70,4 @@ class DiagnosticFormEnum(Enum):
         return tuple(arr)
     
 
-FEE_DISTANCE=1000
+FEE_DISTANCE=10000

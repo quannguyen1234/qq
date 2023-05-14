@@ -35,15 +35,16 @@ class Wallet(models.Model):
         to_wallet.save()
         self.save()
 
+
         #transaction for own 
         Transaction.objects.create(
             transaction_id=Transaction.generate_id(),
             base_user=self.base_user,
             amount=fee,
             detail=' ',
-            status=StatusTransactionEnum.MONEY_OUT,
-            transaction_type=TypeTransactionEnum.TRANSFER_MONEY,
-            payment_method=PaymentMethodEnum.BANKING
+            status=StatusTransactionEnum.MONEY_OUT.value,
+            transaction_type=TypeTransactionEnum.TRANSFER_MONEY.value,
+            payment_method=PaymentMethodEnum.BANKING.value
         )
 
         #transaction for destination 
@@ -52,12 +53,13 @@ class Wallet(models.Model):
             base_user=to_wallet.base_user,
             amount=fee,
             detail=' ',
-            status=StatusTransactionEnum.MONEY_IN,
-            transaction_type=TypeTransactionEnum.RECIEVE_MONEY,
-            payment_method=PaymentMethodEnum.BANKING
+            status=StatusTransactionEnum.MONEY_IN.value,
+            transaction_type=TypeTransactionEnum.RECIEVE_MONEY.value,
+            payment_method=PaymentMethodEnum.BANKING.value
         )
-
-    
+        
+        def __str__(self):
+            return f"Wallet ID: {self.wallet_id} -{self.base_user.user_type}"
 
 class Transaction(models.Model):
     class Meta:
@@ -80,10 +82,10 @@ class Transaction(models.Model):
         return False
     
     @classmethod
-    def generate_id():
+    def generate_id(cls):
         while True:
             id=generate_character(8)
-            if not Transaction.check_id*(id):    
+            if not Transaction.check_id(id):    
                 return id
 
     
