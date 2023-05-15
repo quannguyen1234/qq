@@ -93,4 +93,5 @@ class DiagnosticBillAPI(ModelViewSet):
     permission_classes=[]
 
     
-    
+class a():
+    pass
